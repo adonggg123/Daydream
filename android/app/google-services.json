@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1063225074617",
+    "project_id": "daydream-20e85",
+    "storage_bucket": "daydream-20e85.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063225074617:android:06e96ce8f7f81fa58dcc68",
+        "android_client_info": {
+          "package_name": "com.example.daydream"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwjetNp8jKYxYCdsmrArXaSkMOTBvK9x0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
