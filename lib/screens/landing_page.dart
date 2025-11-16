@@ -138,18 +138,15 @@ class _LandingPageState extends State<LandingPage> {
                       children: [
                       const SizedBox(height: 60),
                       
-                      // Resort Icon/Logo
+                      // Resort Icon/Logo Container
                       Container(
                         width: 120,
                         height: 120,
                         margin: const EdgeInsets.only(bottom: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 3,
-                          ),
+                          border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.2),
@@ -158,33 +155,20 @@ class _LandingPageState extends State<LandingPage> {
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.water_drop,
-                          size: 60,
-                          color: Colors.white,
-                        ),
-                      ),
-                      
-                      // Daydream Resort Title
-                      Text(
-                        'Daydream Resort',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w300,
-                          color: Colors.white,
-                          letterSpacing: 2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
+                        child: ClipOval(
+                          child: Center(
+                            child: Transform.scale(
+                              scale: 1.6, // Adjust this: 1.0 = original, 1.6 = 60% bigger
+                              child: Image.asset(
+                                'assets/icons/LOGO2.png',
+                                width: 500,   // Base size (can be any)
+                                height: 500,
+                                fit: BoxFit.contain,
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 40),
-                      
                       // Tagline
                       Text(
                         "Don't wait.",

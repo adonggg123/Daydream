@@ -407,7 +407,7 @@ class _RegisterPageState extends State<RegisterPage>
                                         ),
                                       )
                                     : const Text(
-                                        'Send OTP',
+                                        'Sign in',
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
