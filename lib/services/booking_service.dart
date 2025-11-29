@@ -148,12 +148,21 @@ class BookingService {
     return _firestore
         .collection(_bookingsCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return Booking.fromMap(doc.id, doc.data());
-      }).toList();
+      final bookings = snapshot.docs.map((doc) {
+        try {
+          return Booking.fromMap(doc.id, doc.data());
+        } catch (e) {
+          debugPrint('Error parsing booking ${doc.id}: $e');
+          return null;
+        }
+      }).whereType<Booking>().toList();
+      
+      // Sort by timestamp descending (most recent first)
+      bookings.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      
+      return bookings;
     });
   }
 

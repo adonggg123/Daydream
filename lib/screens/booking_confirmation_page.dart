@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/room.dart';
 import '../models/booking.dart';
@@ -62,13 +63,47 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
   }
 
   Future<void> _processPayment() async {
-    if (_cardNumberController.text.length < 16 ||
-        _expiryController.text.length < 5 ||
-        _cvvController.text.length < 3 ||
-        _cardNameController.text.isEmpty) {
+    // Validate card number (at least 13 digits, can be up to 19)
+    final cardNumber = _cardNumberController.text.replaceAll(RegExp(r'\D'), '');
+    if (cardNumber.length < 13 || cardNumber.length > 19) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in all payment details'),
+          content: Text('Please enter a valid card number (13-19 digits)'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Validate expiry (MM/YY format)
+    final expiry = _expiryController.text.trim();
+    if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(expiry)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter expiry in MM/YY format (e.g., 12/25)'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Validate CVV (3-4 digits)
+    final cvv = _cvvController.text.trim();
+    if (cvv.length < 3 || cvv.length > 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid CVV (3-4 digits)'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Validate cardholder name
+    if (_cardNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter the cardholder name'),
           backgroundColor: Colors.red,
         ),
       );
@@ -85,10 +120,10 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
         amount: _bookingCost.total,
         currency: 'USD',
         paymentMethod: {
-          'cardNumber': _cardNumberController.text,
-          'expiry': _expiryController.text,
-          'cvv': _cvvController.text,
-          'cardName': _cardNameController.text,
+          'cardNumber': cardNumber,
+          'expiry': expiry,
+          'cvv': cvv,
+          'cardName': _cardNameController.text.trim(),
         },
       );
 
@@ -359,9 +394,10 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                     TextField(
                       controller: _cardNumberController,
                       keyboardType: TextInputType.number,
-                      maxLength: 16,
+                      maxLength: 19,
                       decoration: InputDecoration(
                         labelText: 'Card Number',
+                        hintText: '1234 5678 9012 3456',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -369,6 +405,9 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                         fillColor: Colors.grey.shade50,
                         counterText: '',
                       ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -380,6 +419,7 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                             maxLength: 5,
                             decoration: InputDecoration(
                               labelText: 'Expiry (MM/YY)',
+                              hintText: '12/25',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -387,6 +427,18 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                               fillColor: Colors.grey.shade50,
                               counterText: '',
                             ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[\d/]')),
+                            ],
+                            onChanged: (value) {
+                              // Auto-format MM/YY
+                              if (value.length == 2 && !value.contains('/')) {
+                                _expiryController.value = TextEditingValue(
+                                  text: '$value/',
+                                  selection: TextSelection.collapsed(offset: 3),
+                                );
+                              }
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -394,10 +446,11 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                           child: TextField(
                             controller: _cvvController,
                             keyboardType: TextInputType.number,
-                            maxLength: 3,
+                            maxLength: 4,
                             obscureText: true,
                             decoration: InputDecoration(
                               labelText: 'CVV',
+                              hintText: '123',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -405,6 +458,9 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                               fillColor: Colors.grey.shade50,
                               counterText: '',
                             ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                           ),
                         ),
                       ],

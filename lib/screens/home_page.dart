@@ -24,8 +24,10 @@ class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
   final BookingService _bookingService = BookingService();
   final UserService _userService = UserService();
+  final TextEditingController _searchController = TextEditingController();
   
   List<Room> _rooms = [];
+  List<Room> _filteredRooms = [];
   bool _isLoading = true;
   int _currentIndex = 0;
   AppUser? _currentUserProfile;
@@ -35,6 +37,27 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadRooms();
     _loadUserProfile();
+    _searchController.addListener(_filterRooms);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterRooms() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredRooms = _rooms;
+      } else {
+        _filteredRooms = _rooms.where((room) {
+          return room.name.toLowerCase().contains(query) ||
+              room.description.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
   }
 
   void _loadUserProfile() {
@@ -81,6 +104,7 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _rooms = rooms;
+          _filteredRooms = rooms;
           _isLoading = false;
         });
       }
@@ -280,26 +304,80 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.grey.shade600,
                               ),
                             ),
+                            const SizedBox(height: 20),
+                            // Search Bar
+                            StatefulBuilder(
+                              builder: (context, setState) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.shade200,
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (value) {
+                                      setState(() {});
+                                      _filterRooms();
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: 'Search rooms...',
+                                      prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                      suffixIcon: _searchController.text.isNotEmpty
+                                          ? IconButton(
+                                              icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(() {});
+                                                _filterRooms();
+                                              },
+                                            )
+                                          : null,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
                     ),
 
                     // Rooms Horizontal Scroll
-                    _rooms.isEmpty
+                    _filteredRooms.isEmpty
                         ? SliverToBoxAdapter(
                             child: Container(
                               padding: const EdgeInsets.all(40),
                               child: Column(
                                 children: [
                                   Icon(
-                                    Icons.hotel_outlined,
+                                    _searchController.text.isNotEmpty
+                                        ? Icons.search_off
+                                        : Icons.hotel_outlined,
                                     size: 64,
                                     color: Colors.grey.shade400,
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'No rooms available',
+                                    _searchController.text.isNotEmpty
+                                        ? 'No rooms found matching your search'
+                                        : 'No rooms available',
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.grey.shade600,
@@ -315,13 +393,20 @@ class _HomePageState extends State<HomePage> {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                  child: Text(
-                                    'Available Rooms',
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade900,
-                                    ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _searchController.text.isNotEmpty
+                                            ? 'Search Results (${_filteredRooms.length})'
+                                            : 'Available Rooms',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey.shade900,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 SizedBox(
@@ -329,9 +414,9 @@ class _HomePageState extends State<HomePage> {
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    itemCount: _rooms.length,
+                                    itemCount: _filteredRooms.length,
                                     itemBuilder: (context, index) {
-                                      final room = _rooms[index];
+                                      final room = _filteredRooms[index];
                                       return Container(
                                         width: 280,
                                         margin: const EdgeInsets.only(right: 16),
