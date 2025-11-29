@@ -1,10 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'user_service.dart';
+import 'audit_trail_service.dart';
+import '../models/user.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final UserService _userService = UserService();
+  final AuditTrailService _auditTrail = AuditTrailService();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -23,6 +28,36 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
+
+      // Best-effort: update profile and log audit, but don't fail login if this breaks
+      try {
+        final user = userCredential.user;
+        if (user != null) {
+          await _userService.createOrUpdateUserProfile(
+            userId: user.uid,
+            email: user.email ?? email,
+            displayName: user.displayName,
+            photoUrl: user.photoURL,
+          );
+
+          final userProfile = await _userService.getUserProfile(user.uid);
+          if (userProfile != null) {
+            await _auditTrail.logAction(
+              userId: user.uid,
+              userEmail: user.email ?? email,
+              userRole: userProfile.role,
+              action: AuditAction.userLogin,
+              resourceType: 'user',
+              resourceId: user.uid,
+            );
+          }
+        }
+      } catch (e) {
+        // Don't block login on audit/profile errors
+        // ignore: avoid_print
+        print('Non-fatal error updating user profile/audit on login: $e');
+      }
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -42,6 +77,42 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
+
+      // Best-effort: create profile and log audit, but don't fail registration if this breaks
+      try {
+        final user = userCredential.user;
+        if (user != null) {
+          // Check if this will be the first admin
+          final hasAdmin = await _userService.hasAnyAdmin();
+
+          await _userService.createOrUpdateUserProfile(
+            userId: user.uid,
+            email: user.email ?? email,
+            displayName: user.displayName,
+            photoUrl: user.photoURL,
+            // role will be determined automatically (first user becomes admin)
+          );
+
+          // Get the actual role that was assigned
+          final userProfile = await _userService.getUserProfile(user.uid);
+          final assignedRole = userProfile?.role ?? UserRole.guest;
+
+          await _auditTrail.logAction(
+            userId: user.uid,
+            userEmail: user.email ?? email,
+            userRole: assignedRole,
+            action: AuditAction.userRegister,
+            resourceType: 'user',
+            resourceId: user.uid,
+            details: hasAdmin ? null : {'firstUser': true, 'autoAdmin': true},
+          );
+        }
+      } catch (e) {
+        // Don't block registration on audit/profile errors
+        // ignore: avoid_print
+        print('Non-fatal error creating user profile/audit on register: $e');
+      }
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -72,7 +143,32 @@ class AuthService {
       );
 
       // Sign in to Firebase with the Google credential
-      return await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      // Update user profile and log audit
+      final user = userCredential.user;
+      if (user != null) {
+        await _userService.createOrUpdateUserProfile(
+          userId: user.uid,
+          email: user.email ?? '',
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
+        );
+        
+        final userProfile = await _userService.getUserProfile(user.uid);
+        if (userProfile != null) {
+          await _auditTrail.logAction(
+            userId: user.uid,
+            userEmail: user.email ?? '',
+            userRole: userProfile.role,
+            action: AuditAction.userLogin,
+            resourceType: 'user',
+            resourceId: user.uid,
+          );
+        }
+      }
+      
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
@@ -95,7 +191,32 @@ class AuthService {
           FacebookAuthProvider.credential(result.accessToken!.tokenString);
 
       // Sign in to Firebase with the Facebook credential
-      return await _auth.signInWithCredential(facebookAuthCredential);
+      final userCredential = await _auth.signInWithCredential(facebookAuthCredential);
+      
+      // Update user profile and log audit
+      final user = userCredential.user;
+      if (user != null) {
+        await _userService.createOrUpdateUserProfile(
+          userId: user.uid,
+          email: user.email ?? '',
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
+        );
+        
+        final userProfile = await _userService.getUserProfile(user.uid);
+        if (userProfile != null) {
+          await _auditTrail.logAction(
+            userId: user.uid,
+            userEmail: user.email ?? '',
+            userRole: userProfile.role,
+            action: AuditAction.userLogin,
+            resourceType: 'user',
+            resourceId: user.uid,
+          );
+        }
+      }
+      
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
@@ -106,8 +227,30 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     try {
+      final user = _auth.currentUser;
+      final userEmail = user?.email ?? '';
+      final userId = user?.uid ?? '';
+      
+      // Get user profile for audit log
+      AppUser? userProfile;
+      if (userId.isNotEmpty) {
+        userProfile = await _userService.getUserProfile(userId);
+      }
+      
       // Sign out from Firebase Auth (always try this)
       await _auth.signOut();
+      
+      // Log audit trail
+      if (userId.isNotEmpty && userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userEmail,
+          userRole: userProfile.role,
+          action: AuditAction.userLogout,
+          resourceType: 'user',
+          resourceId: userId,
+        );
+      }
       
       // Sign out from Google (ignore errors if not signed in with Google)
       try {

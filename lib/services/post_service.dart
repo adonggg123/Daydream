@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post.dart';
+import 'audit_trail_service.dart';
+import 'user_service.dart';
 
 class PostService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'posts';
+  final AuditTrailService _auditTrail = AuditTrailService();
+  final UserService _userService = UserService();
 
   // Create a new post
   Future<Post> createPost({
@@ -21,6 +25,20 @@ class PostService {
     );
 
     await postRef.set(post.toMap());
+    
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userEmail,
+        userRole: userProfile.role,
+        action: AuditAction.postCreated,
+        resourceType: 'post',
+        resourceId: postRef.id,
+      );
+    }
+    
     return post;
   }
 
@@ -54,6 +72,19 @@ class PostService {
     }
 
     await postRef.update({'likedBy': likedBy});
+    
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userProfile.email,
+        userRole: userProfile.role,
+        action: AuditAction.postLiked,
+        resourceType: 'post',
+        resourceId: postId,
+      );
+    }
   }
 
   // Add a comment to a post
@@ -81,6 +112,19 @@ class PostService {
 
     existingComments.add(newComment);
     await postRef.update({'comments': existingComments});
+    
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userEmail,
+        userRole: userProfile.role,
+        action: AuditAction.commentAdded,
+        resourceType: 'post',
+        resourceId: postId,
+      );
+    }
   }
 
   // Delete a post
@@ -93,6 +137,19 @@ class PostService {
     final post = Post.fromMap(postId, postDoc.data()!);
     if (post.userId == userId) {
       await postRef.delete();
+      
+      // Log audit trail
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: AuditAction.postDeleted,
+          resourceType: 'post',
+          resourceId: postId,
+        );
+      }
     }
   }
 }

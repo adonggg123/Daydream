@@ -2,11 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/room.dart';
 import '../models/booking.dart';
+import 'audit_trail_service.dart';
+import 'user_service.dart';
+import 'notification_service.dart';
 
 class BookingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _roomsCollection = 'rooms';
   final String _bookingsCollection = 'bookings';
+  final AuditTrailService _auditTrail = AuditTrailService();
+  final UserService _userService = UserService();
+  final NotificationService _notificationService = NotificationService();
 
   // Get all rooms
   Future<List<Room>> getAllRooms() async {
@@ -101,6 +107,39 @@ class BookingService {
     );
 
     await bookingRef.set(booking.toMap());
+
+    // Log audit trail & notify admins (best-effort; don't fail booking)
+    try {
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: AuditAction.bookingCreated,
+          resourceType: 'booking',
+          resourceId: bookingRef.id,
+          details: {
+            'roomId': roomId,
+            'roomName': roomName,
+            'checkIn': checkIn.toIso8601String(),
+            'checkOut': checkOut.toIso8601String(),
+            'total': total,
+          },
+        );
+        await _notificationService.createAdminBookingNotification(
+          bookingId: bookingRef.id,
+          roomName: roomName,
+          userEmail: userProfile.email,
+          checkIn: checkIn,
+          checkOut: checkOut,
+          total: total,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error logging audit/notification for booking: $e');
+    }
+    
     return bookingRef.id;
   }
 
@@ -123,12 +162,55 @@ class BookingService {
     required String bookingId,
     required String paymentId,
     required bool isPaid,
+    String? userId,
   }) async {
     await _firestore.collection(_bookingsCollection).doc(bookingId).update({
       'paymentId': paymentId,
       'isPaid': isPaid,
       'status': isPaid ? BookingStatus.confirmed.name : BookingStatus.pending.name,
     });
+    
+    // Log audit trail
+    if (userId != null) {
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: isPaid ? AuditAction.bookingPaymentProcessed : AuditAction.bookingUpdated,
+          resourceType: 'booking',
+          resourceId: bookingId,
+          details: {
+            'paymentId': paymentId,
+            'isPaid': isPaid,
+          },
+        );
+      }
+    }
+  }
+  
+  // Cancel booking
+  Future<void> cancelBooking({
+    required String bookingId,
+    required String userId,
+  }) async {
+    await _firestore.collection(_bookingsCollection).doc(bookingId).update({
+      'status': BookingStatus.cancelled.name,
+    });
+    
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userProfile.email,
+        userRole: userProfile.role,
+        action: AuditAction.bookingCancelled,
+        resourceType: 'booking',
+        resourceId: bookingId,
+      );
+    }
   }
 
   // Force initialize rooms - clears existing and creates fresh

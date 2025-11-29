@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 import 'register_page.dart';
 import 'home_page.dart';
+import 'admin_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,6 +20,7 @@ class _LoginPageState extends State<LoginPage>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+  final _userService = UserService();
   bool _isLoading = false;
   bool _obscurePassword = true;
   late AnimationController _animationController;
@@ -50,12 +54,36 @@ class _LoginPageState extends State<LoginPage>
       });
 
       try {
-        await _authService.signInWithEmailAndPassword(
+        final credential = await _authService.signInWithEmailAndPassword(
           _emailController.text,
           _passwordController.text,
         );
 
         if (mounted) {
+          // Decide destination based on user role
+          final user = credential?.user;
+          if (user != null) {
+            AppUser? appUser = await _userService.getUserProfile(user.uid);
+
+            // Fallback: try lookup by email if profile not found by UID
+            if (appUser == null && user.email != null) {
+              final matches =
+                  await _userService.searchUsersByEmail(user.email!);
+              if (matches.isNotEmpty) {
+                appUser = matches.first;
+              }
+            }
+
+            if (appUser != null && appUser.isAdmin) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                    builder: (context) => const AdminDashboard()),
+              );
+              return;
+            }
+          }
+
+          // Default for non-admins
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const HomePage()),
           );
@@ -466,8 +494,28 @@ class _LoginPageState extends State<LoginPage>
     });
 
     try {
-      await _authService.signInWithGoogle();
+      final credential = await _authService.signInWithGoogle();
       if (mounted) {
+        final user = credential?.user;
+        if (user != null) {
+          AppUser? appUser = await _userService.getUserProfile(user.uid);
+
+          if (appUser == null && user.email != null) {
+            final matches =
+                await _userService.searchUsersByEmail(user.email!);
+            if (matches.isNotEmpty) {
+              appUser = matches.first;
+            }
+          }
+
+          if (appUser != null && appUser.isAdmin) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const AdminDashboard()),
+            );
+            return;
+          }
+        }
+
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
@@ -497,8 +545,28 @@ class _LoginPageState extends State<LoginPage>
     });
 
     try {
-      await _authService.signInWithFacebook();
+      final credential = await _authService.signInWithFacebook();
       if (mounted) {
+        final user = credential?.user;
+        if (user != null) {
+          AppUser? appUser = await _userService.getUserProfile(user.uid);
+
+          if (appUser == null && user.email != null) {
+            final matches =
+                await _userService.searchUsersByEmail(user.email!);
+            if (matches.isNotEmpty) {
+              appUser = matches.first;
+            }
+          }
+
+          if (appUser != null && appUser.isAdmin) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const AdminDashboard()),
+            );
+            return;
+          }
+        }
+
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomePage()),
         );

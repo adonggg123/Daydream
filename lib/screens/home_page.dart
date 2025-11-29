@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 import '../models/room.dart';
 import '../widgets/social_feed.dart';
 import 'login_page.dart';
@@ -9,6 +11,7 @@ import 'room_detail_page.dart';
 import 'gallery_page.dart';
 import 'notifications_page.dart';
 import 'profile_page.dart';
+import 'admin_dashboard.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,15 +23,31 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
   final BookingService _bookingService = BookingService();
+  final UserService _userService = UserService();
   
   List<Room> _rooms = [];
   bool _isLoading = true;
   int _currentIndex = 0;
+  AppUser? _currentUserProfile;
 
   @override
   void initState() {
     super.initState();
     _loadRooms();
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final user = _authService.currentUser;
+    if (user != null) {
+      _userService.streamUserProfile(user.uid).listen((profile) {
+        if (mounted) {
+          setState(() {
+            _currentUserProfile = profile;
+          });
+        }
+      });
+    }
   }
 
   Future<void> _loadRooms() async {
@@ -162,38 +181,68 @@ class _HomePageState extends State<HomePage> {
                           );
                         }
                       }
+                    } else if (value == 'admin') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminDashboard(),
+                        ),
+                      );
                     }
                   },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'user',
-                      enabled: false,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.email ?? 'User',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                  itemBuilder: (context) {
+                    final isAdmin = _currentUserProfile?.isAdmin ?? false;
+                    
+                    return [
+                      PopupMenuItem(
+                        value: 'user',
+                        enabled: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.email ?? 'User',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
+                            if (_currentUserProfile != null)
+                              Text(
+                                'Role: ${_currentUserProfile!.role.name.toUpperCase()}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            const Divider(),
+                          ],
+                        ),
+                      ),
+                      if (isAdmin)
+                        PopupMenuItem(
+                          value: 'admin',
+                          child: const Row(
+                            children: [
+                              Icon(Icons.admin_panel_settings, size: 20),
+                              SizedBox(width: 8),
+                              Text('Admin Dashboard'),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          const Divider(),
-                        ],
+                        ),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, size: 20),
+                            SizedBox(width: 8),
+                            Text('Sign Out'),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout, size: 20),
-                          SizedBox(width: 8),
-                          Text('Sign Out'),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ];
+                  },
                 ),
                 const SizedBox(width: 8),
               ],
