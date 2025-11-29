@@ -89,8 +89,8 @@ class _HomePageState extends State<HomePage> {
       // Wait a bit for Firestore to sync
       await Future.delayed(const Duration(milliseconds: 500));
       
-      // Get all rooms with timeout
-      final rooms = await _bookingService.getAllRooms()
+      // Get all rooms including unavailable ones (for display)
+      final rooms = await _bookingService.getAllRoomsForAdmin()
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () {
@@ -399,7 +399,7 @@ class _HomePageState extends State<HomePage> {
                                       Text(
                                         _searchController.text.isNotEmpty
                                             ? 'Search Results (${_filteredRooms.length})'
-                                            : 'Available Rooms',
+                                            : 'All Rooms',
                                         style: TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
@@ -528,18 +528,20 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      child: Opacity(
+        opacity: room.isAvailable ? 1.0 : 0.7,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.shade300,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -619,23 +621,40 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.purple.shade600,
                           ),
                         ),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.people,
-                              size: 14,
-                              color: Colors.grey.shade600,
+                        if (!room.isAvailable)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${room.capacity}',
+                            child: Text(
+                              'Not Available',
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700,
                               ),
                             ),
-                          ],
-                        ),
+                          )
+                        else
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.people,
+                                size: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${room.capacity}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ],
@@ -643,6 +662,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

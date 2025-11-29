@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/room.dart';
 import '../models/booking.dart';
 import 'audit_trail_service.dart';
@@ -8,19 +10,214 @@ import 'notification_service.dart';
 
 class BookingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final String _roomsCollection = 'rooms';
   final String _bookingsCollection = 'bookings';
   final AuditTrailService _auditTrail = AuditTrailService();
   final UserService _userService = UserService();
   final NotificationService _notificationService = NotificationService();
 
-  // Get all rooms
+  // Upload image to Firebase Storage
+  Future<String> uploadRoomImage(File imageFile, String roomId) async {
+    try {
+      final String fileName = 'rooms/$roomId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final Reference ref = _storage.ref().child(fileName);
+      
+      final UploadTask uploadTask = ref.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('Error uploading image: $e');
+      rethrow;
+    }
+  }
+
+  // Delete image from Firebase Storage
+  Future<void> deleteRoomImage(String imageUrl) async {
+    try {
+      if (imageUrl.isEmpty || !imageUrl.contains('firebasestorage')) {
+        return; // Not a Firebase Storage URL, skip deletion
+      }
+      
+      final Reference ref = _storage.refFromURL(imageUrl);
+      await ref.delete();
+    } catch (e) {
+      debugPrint('Error deleting image: $e');
+      // Don't throw - image deletion failure shouldn't block room operations
+    }
+  }
+
+  // Get all rooms (for regular users - only available rooms)
   Future<List<Room>> getAllRooms() async {
     final roomsSnapshot = await _firestore.collection(_roomsCollection).get();
     return roomsSnapshot.docs
         .map((doc) => Room.fromMap(doc.id, doc.data()))
         .where((room) => room.isAvailable)
         .toList();
+  }
+
+  // Get all rooms including unavailable ones (for admin)
+  Future<List<Room>> getAllRoomsForAdmin() async {
+    final roomsSnapshot = await _firestore.collection(_roomsCollection).get();
+    return roomsSnapshot.docs
+        .map((doc) => Room.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  // Stream all rooms for admin (real-time updates)
+  Stream<List<Room>> streamAllRoomsForAdmin() {
+    return _firestore.collection(_roomsCollection).snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Room.fromMap(doc.id, doc.data()))
+          .toList();
+    });
+  }
+
+  // Update room availability
+  Future<void> updateRoomAvailability({
+    required String roomId,
+    required bool isAvailable,
+    String? userId,
+  }) async {
+    await _firestore.collection(_roomsCollection).doc(roomId).update({
+      'isAvailable': isAvailable,
+    });
+
+    // Log audit trail
+    if (userId != null) {
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: isAvailable ? AuditAction.roomUpdated : AuditAction.roomUpdated,
+          resourceType: 'room',
+          resourceId: roomId,
+          details: {
+            'isAvailable': isAvailable,
+          },
+        );
+      }
+    }
+  }
+
+  // Create a new room
+  Future<String> createRoom({
+    required String name,
+    required String description,
+    required double price,
+    required int capacity,
+    List<String> amenities = const [],
+    String imageUrl = '',
+    bool isAvailable = true,
+    String? userId,
+  }) async {
+    final roomRef = _firestore.collection(_roomsCollection).doc();
+    final roomId = roomRef.id;
+
+    final roomData = {
+      'name': name,
+      'description': description,
+      'price': price,
+      'capacity': capacity,
+      'amenities': amenities,
+      'imageUrl': imageUrl,
+      'isAvailable': isAvailable,
+    };
+
+    await roomRef.set(roomData);
+
+    // Log audit trail
+    if (userId != null) {
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: AuditAction.roomCreated,
+          resourceType: 'room',
+          resourceId: roomId,
+          details: roomData,
+        );
+      }
+    }
+
+    return roomId;
+  }
+
+  // Update room details
+  Future<void> updateRoom({
+    required String roomId,
+    required String name,
+    required String description,
+    required double price,
+    required int capacity,
+    List<String>? amenities,
+    String? imageUrl,
+    bool? isAvailable,
+    String? userId,
+  }) async {
+    final updateData = <String, dynamic>{
+      'name': name,
+      'description': description,
+      'price': price,
+      'capacity': capacity,
+    };
+
+    if (amenities != null) {
+      updateData['amenities'] = amenities;
+    }
+    if (imageUrl != null) {
+      updateData['imageUrl'] = imageUrl;
+    }
+    if (isAvailable != null) {
+      updateData['isAvailable'] = isAvailable;
+    }
+
+    await _firestore.collection(_roomsCollection).doc(roomId).update(updateData);
+
+    // Log audit trail
+    if (userId != null) {
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: AuditAction.roomUpdated,
+          resourceType: 'room',
+          resourceId: roomId,
+          details: updateData,
+        );
+      }
+    }
+  }
+
+  // Delete a room
+  Future<void> deleteRoom({
+    required String roomId,
+    String? userId,
+  }) async {
+    await _firestore.collection(_roomsCollection).doc(roomId).delete();
+
+    // Log audit trail
+    if (userId != null) {
+      final userProfile = await _userService.getUserProfile(userId);
+      if (userProfile != null) {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          action: AuditAction.roomDeleted,
+          resourceType: 'room',
+          resourceId: roomId,
+        );
+      }
+    }
   }
 
   // Get available rooms for date range
@@ -222,23 +419,13 @@ class BookingService {
     }
   }
 
-  // Force initialize rooms - clears existing and creates fresh
+  // Force initialize rooms - updates rooms while preserving availability status
   Future<void> forceInitializeRooms() async {
-    try {
-      // Delete all existing rooms first
-      final existingRooms = await _firestore.collection(_roomsCollection).get();
-      for (var doc in existingRooms.docs) {
-        await doc.reference.delete();
-      }
-    } catch (e) {
-      debugPrint('Error clearing existing rooms: $e');
-    }
-    
-    // Now create all rooms
+    // Initialize rooms without deleting existing ones
     await initializeSampleRooms();
   }
 
-  // Initialize sample rooms - always updates to ensure all rooms exist
+  // Initialize sample rooms - preserves existing availability status
   Future<void> initializeSampleRooms() async {
     final sampleRooms = [
       Room(
@@ -313,15 +500,32 @@ class BookingService {
       ),
     ];
 
-    // Always update/create all rooms to ensure they exist with latest data
+    // Update/create all rooms while preserving existing availability status
     for (final room in sampleRooms) {
       try {
-        await _firestore.collection(_roomsCollection).doc(room.id).set(room.toMap());
-        debugPrint('Created room: ${room.name}');
+        // Check if room already exists
+        final roomDoc = await _firestore.collection(_roomsCollection).doc(room.id).get();
+        
+        if (roomDoc.exists) {
+          // Room exists - preserve the existing isAvailable status
+          final existingData = roomDoc.data();
+          final existingIsAvailable = existingData?['isAvailable'] ?? true;
+          
+          // Update room data but preserve availability status
+          final roomData = room.toMap();
+          roomData['isAvailable'] = existingIsAvailable;
+          
+          await _firestore.collection(_roomsCollection).doc(room.id).update(roomData);
+          debugPrint('Updated room: ${room.name} (preserved availability: $existingIsAvailable)');
+        } else {
+          // Room doesn't exist - create it with default availability
+          await _firestore.collection(_roomsCollection).doc(room.id).set(room.toMap());
+          debugPrint('Created room: ${room.name}');
+        }
       } catch (e) {
-        debugPrint('Error creating room ${room.id}: $e');
+        debugPrint('Error updating/creating room ${room.id}: $e');
       }
     }
-    debugPrint('Total rooms created: ${sampleRooms.length}');
+    debugPrint('Total rooms processed: ${sampleRooms.length}');
   }
 }

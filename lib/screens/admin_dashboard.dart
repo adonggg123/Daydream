@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../services/user_service.dart';
 import '../services/audit_trail_service.dart';
 import '../models/user.dart';
+import '../models/room.dart';
 import '../services/booking_service.dart';
 import '../services/notification_service.dart';
 import '../models/admin_notification.dart';
@@ -164,15 +167,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   theme: theme,
                 ),
                 _buildNavItem(
+                  icon: Icons.hotel_rounded,
+                  label: 'Rooms',
+                  index: 2,
+                  theme: theme,
+                ),
+                _buildNavItem(
                   icon: Icons.history_rounded,
                   label: 'Audit Trail',
-                  index: 2,
+                  index: 3,
                   theme: theme,
                 ),
                 _buildNavItem(
                   icon: Icons.settings_rounded,
                   label: 'System',
-                  index: 3,
+                  index: 4,
                   theme: theme,
                 ),
                 const Divider(height: 32),
@@ -350,8 +359,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 1:
         return _buildUsersTab();
       case 2:
-        return _buildAuditTrailTab();
+        return _buildRoomsTab();
       case 3:
+        return _buildAuditTrailTab();
+      case 4:
         return _buildSystemTab();
       default:
         return _buildDashboardTab();
@@ -365,8 +376,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 1:
         return 'User Management';
       case 2:
-        return 'Audit Trail';
+        return 'Room Management';
       case 3:
+        return 'Audit Trail';
+      case 4:
         return 'System Settings';
       default:
         return 'Dashboard';
@@ -1002,13 +1015,1237 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  Widget _buildRoomsTab() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Text(
+            'Room Management',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Manage room availability and details',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Add Room Button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  _showCreateRoomDialog();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add New Room'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Rooms List
+          Expanded(
+            child: StreamBuilder<List<Room>>(
+              stream: _bookingService.streamAllRoomsForAdmin(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final rooms = snapshot.data!;
+                if (rooms.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.hotel_outlined, size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No rooms found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _showCreateRoomDialog();
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Your First Room'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: rooms.length,
+                  itemBuilder: (context, index) {
+                    return _buildRoomCard(rooms[index]);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomCard(Room room) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: room.isAvailable ? Colors.green.shade200 : Colors.red.shade200,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Room Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: room.imageUrl.isNotEmpty
+                ? Image.network(
+                    room.imageUrl,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 120,
+                        height: 120,
+                        color: Colors.purple.shade100,
+                        child: Icon(
+                          Icons.hotel,
+                          size: 50,
+                          color: Colors.purple.shade300,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 120,
+                    height: 120,
+                    color: Colors.purple.shade100,
+                    child: Icon(
+                      Icons.hotel,
+                      size: 50,
+                      color: Colors.purple.shade300,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 20),
+          // Room Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        room.name,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade900,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: room.isAvailable ? Colors.green.shade100 : Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        room.isAvailable ? 'Available' : 'Not Available',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: room.isAvailable ? Colors.green.shade700 : Colors.red.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  room.description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.attach_money, size: 16, color: Colors.purple.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      '\$${room.price.toStringAsFixed(2)}/night',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple.shade600,
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Icon(Icons.people, size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${room.capacity} guests',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Actions
+          Column(
+            children: [
+              IconButton(
+                icon: Icon(
+                  room.isAvailable ? Icons.block : Icons.check_circle,
+                  color: room.isAvailable ? Colors.orange.shade600 : Colors.green.shade600,
+                ),
+                onPressed: () async {
+                  final userId = _authService.currentUser?.uid;
+                  if (userId == null) return;
+                  
+                  await _bookingService.updateRoomAvailability(
+                    roomId: room.id,
+                    isAvailable: !room.isAvailable,
+                    userId: userId,
+                  );
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          room.isAvailable
+                              ? 'Room marked as unavailable'
+                              : 'Room marked as available',
+                        ),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                tooltip: room.isAvailable ? 'Mark as Unavailable' : 'Mark as Available',
+              ),
+              IconButton(
+                icon: Icon(Icons.edit, color: Colors.blue.shade600),
+                onPressed: () {
+                  try {
+                    _showEditRoomDialog(room);
+                  } catch (e) {
+                    debugPrint('Error showing edit dialog: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error opening edit dialog: $e'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                tooltip: 'Edit Room',
+              ),
+              IconButton(
+                icon: Icon(Icons.delete, color: Colors.red.shade600),
+                onPressed: () {
+                  _showDeleteRoomDialog(room);
+                },
+                tooltip: 'Delete Room',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteRoomDialog(Room room) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Room'),
+        content: Text('Are you sure you want to delete "${room.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final userId = _authService.currentUser?.uid;
+              if (userId == null) return;
+
+              try {
+                await _bookingService.deleteRoom(
+                  roomId: room.id,
+                  userId: userId,
+                );
+
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Room deleted successfully'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error deleting room: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateRoomDialog() {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final priceController = TextEditingController();
+    final capacityController = TextEditingController(text: '2');
+    final amenitiesController = TextEditingController();
+    bool isAvailable = true;
+    File? selectedImage;
+    String? imagePreviewUrl;
+    final ImagePicker _imagePicker = ImagePicker();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create New Room'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                // Image Selection
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Room Image',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (selectedImage != null || (imagePreviewUrl != null && imagePreviewUrl!.isNotEmpty))
+                        Container(
+                          height: 150,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: selectedImage != null
+                                ? Image.file(
+                                    selectedImage!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  )
+                                : Image.network(
+                                    imagePreviewUrl!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(Icons.broken_image, size: 50),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final XFile? image = await _imagePicker.pickImage(
+                                    source: ImageSource.gallery,
+                                    imageQuality: 85,
+                                  );
+                                  if (image != null) {
+                                    setDialogState(() {
+                                      selectedImage = File(image.path);
+                                      imagePreviewUrl = null;
+                                    });
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error picking image: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final XFile? image = await _imagePicker.pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 85,
+                                  );
+                                  if (image != null) {
+                                    setDialogState(() {
+                                      selectedImage = File(image.path);
+                                      imagePreviewUrl = null;
+                                    });
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error taking photo: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (selectedImage != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            setDialogState(() {
+                              selectedImage = null;
+                            });
+                          },
+                          icon: const Icon(Icons.delete, size: 16),
+                          label: const Text('Remove Image'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Room Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description *',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: priceController,
+                        decoration: const InputDecoration(
+                          labelText: 'Price *',
+                          border: OutlineInputBorder(),
+                          prefixText: '\$',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        controller: capacityController,
+                        decoration: const InputDecoration(
+                          labelText: 'Capacity *',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                // Image Selection
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Room Image',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (selectedImage != null || (imagePreviewUrl != null && imagePreviewUrl!.isNotEmpty))
+                        Container(
+                          height: 150,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: selectedImage != null
+                                ? Image.file(
+                                    selectedImage!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  )
+                                : Image.network(
+                                    imagePreviewUrl!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(Icons.broken_image, size: 50),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final XFile? image = await _imagePicker.pickImage(
+                                    source: ImageSource.gallery,
+                                    imageQuality: 85,
+                                  );
+                                  if (image != null) {
+                                    setDialogState(() {
+                                      selectedImage = File(image.path);
+                                      imagePreviewUrl = null;
+                                    });
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error picking image: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final XFile? image = await _imagePicker.pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 85,
+                                  );
+                                  if (image != null) {
+                                    setDialogState(() {
+                                      selectedImage = File(image.path);
+                                      imagePreviewUrl = null;
+                                    });
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error taking photo: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (selectedImage != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            setDialogState(() {
+                              selectedImage = null;
+                            });
+                          },
+                          icon: const Icon(Icons.delete, size: 16),
+                          label: const Text('Remove Image'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amenitiesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Amenities (comma-separated)',
+                    border: OutlineInputBorder(),
+                    hintText: 'WiFi, TV, AC, Pool Access',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: isAvailable,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          isAvailable = value ?? false;
+                        });
+                      },
+                    ),
+                    const Text('Room is available'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty ||
+                    descriptionController.text.isEmpty ||
+                    priceController.text.isEmpty ||
+                    capacityController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please fill in all required fields'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
+
+                final userId = _authService.currentUser?.uid;
+                if (userId == null) return;
+
+                try {
+                  final amenities = amenitiesController.text
+                      .split(',')
+                      .map((e) => e.trim())
+                      .where((e) => e.isNotEmpty)
+                      .toList();
+
+                  // Show loading indicator if uploading image
+                  if (selectedImage != null) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
+                  String? finalImageUrl = imagePreviewUrl;
+                  
+                  try {
+                    // Create room first to get the actual room ID
+                    final roomId = await _bookingService.createRoom(
+                      name: nameController.text,
+                      description: descriptionController.text,
+                      price: double.tryParse(priceController.text) ?? 0.0,
+                      capacity: int.tryParse(capacityController.text) ?? 2,
+                      amenities: amenities,
+                      imageUrl: finalImageUrl ?? '',
+                      isAvailable: isAvailable,
+                      userId: userId,
+                    );
+
+                    // Upload image if a file was selected (after room is created)
+                    if (selectedImage != null) {
+                      try {
+                        finalImageUrl = await _bookingService.uploadRoomImage(selectedImage!, roomId);
+                        
+                        // Update room with the uploaded image URL
+                        await _bookingService.updateRoom(
+                          roomId: roomId,
+                          name: nameController.text,
+                          description: descriptionController.text,
+                          price: double.tryParse(priceController.text) ?? 0.0,
+                          capacity: int.tryParse(capacityController.text) ?? 2,
+                          amenities: amenities,
+                          imageUrl: finalImageUrl,
+                          isAvailable: isAvailable,
+                          userId: userId,
+                        );
+                      } catch (e) {
+                        debugPrint('Error uploading image: $e');
+                        // Room is already created, just show warning
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Room created but image upload failed: $e'),
+                              backgroundColor: Colors.orange,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                    
+                    // Close loading dialog if it was shown
+                    if (selectedImage != null && mounted) {
+                      Navigator.of(context).pop();
+                    }
+
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Room created successfully'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    // Close loading dialog if it was shown
+                    if (selectedImage != null && mounted) {
+                      Navigator.of(context).pop();
+                    }
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error creating room: $e'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error creating room: $e'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditRoomDialog(Room room) {
+    try {
+      final nameController = TextEditingController(text: room.name);
+      final descriptionController = TextEditingController(text: room.description);
+      final priceController = TextEditingController(text: room.price.toStringAsFixed(2));
+      final capacityController = TextEditingController(text: room.capacity.toString());
+      final amenitiesController = TextEditingController(
+        text: room.amenities.join(', '),
+      );
+      bool isAvailable = room.isAvailable;
+      File? selectedImage;
+      String? imagePreviewUrl = room.imageUrl.isNotEmpty ? room.imageUrl : null;
+      final ImagePicker _imagePicker = ImagePicker();
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setDialogState) => Dialog(
+            insetPadding: const EdgeInsets.all(20),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+                maxWidth: 600,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade600,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Edit Room',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                // Image Selection
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Room Image',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (selectedImage != null || (imagePreviewUrl != null && imagePreviewUrl!.isNotEmpty))
+                        Container(
+                          height: 150,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: selectedImage != null
+                                ? Image.file(
+                                    selectedImage!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  )
+                                : Image.network(
+                                    imagePreviewUrl!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(Icons.broken_image, size: 50),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final XFile? image = await _imagePicker.pickImage(
+                                    source: ImageSource.gallery,
+                                    imageQuality: 85,
+                                  );
+                                  if (image != null) {
+                                    setDialogState(() {
+                                      selectedImage = File(image.path);
+                                      imagePreviewUrl = null;
+                                    });
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error picking image: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final XFile? image = await _imagePicker.pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 85,
+                                  );
+                                  if (image != null) {
+                                    setDialogState(() {
+                                      selectedImage = File(image.path);
+                                      imagePreviewUrl = null;
+                                    });
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error taking photo: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (selectedImage != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            setDialogState(() {
+                              selectedImage = null;
+                            });
+                          },
+                          icon: const Icon(Icons.delete, size: 16),
+                          label: const Text('Remove Image'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Room Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description *',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: priceController,
+                        decoration: const InputDecoration(
+                          labelText: 'Price *',
+                          border: OutlineInputBorder(),
+                          prefixText: '\$',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        controller: capacityController,
+                        decoration: const InputDecoration(
+                          labelText: 'Capacity *',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amenitiesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Amenities (comma-separated)',
+                    border: OutlineInputBorder(),
+                    hintText: 'WiFi, TV, AC, Pool Access',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: isAvailable,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          isAvailable = value ?? false;
+                        });
+                      },
+                    ),
+                    const Text('Room is available'),
+                  ],
+                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Actions
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (nameController.text.isEmpty ||
+                                descriptionController.text.isEmpty ||
+                                priceController.text.isEmpty ||
+                                capacityController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please fill in all required fields'),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final userId = _authService.currentUser?.uid;
+                            if (userId == null) return;
+
+                            try {
+                              final amenities = amenitiesController.text
+                                  .split(',')
+                                  .map((e) => e.trim())
+                                  .where((e) => e.isNotEmpty)
+                                  .toList();
+
+                              String? finalImageUrl = imagePreviewUrl;
+                              
+                              // Upload new image if a file was selected
+                              if (selectedImage != null) {
+                                // Show loading indicator
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                                
+                                try {
+                                  // Delete old image if it exists and is from Firebase Storage
+                                  if (room.imageUrl.isNotEmpty) {
+                                    await _bookingService.deleteRoomImage(room.imageUrl);
+                                  }
+                                  
+                                  // Upload new image
+                                  finalImageUrl = await _bookingService.uploadRoomImage(selectedImage!, room.id);
+                                  
+                                  // Close loading dialog
+                                  if (mounted) Navigator.of(context).pop();
+                                } catch (e) {
+                                  // Close loading dialog
+                                  if (mounted) Navigator.of(context).pop();
+                                  throw Exception('Failed to upload image: $e');
+                                }
+                              }
+
+                              await _bookingService.updateRoom(
+                                roomId: room.id,
+                                name: nameController.text,
+                                description: descriptionController.text,
+                                price: double.tryParse(priceController.text) ?? room.price,
+                                capacity: int.tryParse(capacityController.text) ?? room.capacity,
+                                amenities: amenities,
+                                imageUrl: finalImageUrl,
+                                isAvailable: isAvailable,
+                                userId: userId,
+                              );
+
+                              if (mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Room updated successfully'),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error updating room: $e'),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error in _showEditRoomDialog: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening edit dialog: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildUsersTab() {
     return Container(
       padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search and Filter Bar
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1023,25 +2260,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             child: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search users by email...',
-                      prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                Icon(Icons.people_rounded, color: Colors.grey.shade600),
+                const SizedBox(width: 12),
+                StreamBuilder<List<AppUser>>(
+                  stream: _userService.getAllUsers(),
+                  builder: (context, snapshot) {
+                    final count = snapshot.hasData ? snapshot.data!.length : 0;
+                    return Text(
+                      'Showing $count users',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
                       ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          // Users List
           Expanded(
             child: StreamBuilder<List<AppUser>>(
               stream: _userService.getAllUsers(),
@@ -1052,14 +2289,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                 final users = snapshot.data!;
 
-                return GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 1.2,
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 20,
-                  ),
+                return ListView.separated(
                   itemCount: users.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final user = users[index];
                     return _buildUserCard(user);
@@ -1082,121 +2314,161 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return InkWell(
       onTap: () => _showUserDetails(user),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 5),
+              blurRadius: 10,
             ),
           ],
         ),
-        child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundImage: user.photoUrl != null
-                      ? NetworkImage(user.photoUrl!)
-                      : null,
-                  backgroundColor: roleColor.withOpacity(0.1),
-                  child: user.photoUrl == null
-                      ? Text(
-                          user.email[0].toUpperCase(),
-                          style: TextStyle(
-                            color: roleColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
+            Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: roleColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: user.photoUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.network(
+                      user.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Text(
+                            user.email[0].toUpperCase(),
+                            style: TextStyle(
+                              color: roleColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                            ),
                           ),
-                        )
-                      : null,
-                ),
-                const Spacer(),
-                PopupMenuButton(
-                  icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      child: const Text('Change Role'),
-                      onTap: () => Future.delayed(
-                        const Duration(milliseconds: 100),
-                        () => _showRoleChangeDialog(user),
+                        );
+                      },
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      user.email[0].toUpperCase(),
+                      style: TextStyle(
+                        color: roleColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
                       ),
                     ),
-                    PopupMenuItem(
-                      child: Text(user.isActive ? 'Deactivate' : 'Activate'),
-                      onTap: () => _toggleUserActive(user),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              user.displayName ?? user.email.split('@')[0],
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              user.email,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: roleColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    user.role.name.toUpperCase(),
+          ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          user.displayName ?? user.email.split('@')[0],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      PopupMenuButton(
+                        icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            child: const Text('Change Role'),
+                            onTap: () => Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () => _showRoleChangeDialog(user),
+                            ),
+                          ),
+                          PopupMenuItem(
+                            child: Text(user.isActive ? 'Deactivate' : 'Activate'),
+                            onTap: () => _toggleUserActive(user),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.email_outlined, size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          user.email,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: roleColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          user.role.name.toUpperCase(),
+                          style: TextStyle(
+                            color: roleColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (user.isActive ? Colors.green : Colors.red).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          user.isActive ? 'ACTIVE' : 'INACTIVE',
+                          style: TextStyle(
+                            color: user.isActive ? Colors.green : Colors.red,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Joined ${_formatDateTime(user.createdAt)}',
                     style: TextStyle(
-                      color: roleColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade500,
+                      fontSize: 12,
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: (user.isActive ? Colors.green : Colors.red).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    user.isActive ? 'ACTIVE' : 'INACTIVE',
-                    style: TextStyle(
-                      color: user.isActive ? Colors.green : Colors.red,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
-        ),
         ),
       ),
     );
@@ -1347,47 +2619,56 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'System Management',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Manage system settings and maintenance tasks',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 32),
-          Expanded(
-            child: GridView(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.3,
-                crossAxisSpacing: 24,
-                mainAxisSpacing: 24,
-              ),
-              children: [
-                _buildSystemCard(
-                  icon: Icons.room_rounded,
-                  title: 'Initialize Rooms',
-                  description: 'Create or refresh all sample room data in the system',
-                  color: Colors.blue,
-                  onTap: _initializeRooms,
-                ),
-                _buildSystemCard(
-                  icon: Icons.delete_sweep_rounded,
-                  title: 'Cleanup Audit Logs',
-                  description: 'Delete audit records older than 90 days to optimize performance',
-                  color: Colors.red,
-                  onTap: _cleanupAuditLogs,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
                 ),
               ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.settings_rounded, color: Colors.grey.shade600),
+                const SizedBox(width: 12),
+                Text(
+                  'System management tools',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: ListView.separated(
+              itemCount: 2,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _buildSystemCard(
+                    icon: Icons.room_rounded,
+                    title: 'Initialize Rooms',
+                    description: 'Create or refresh all sample room data in the system',
+                    color: Colors.blue,
+                    onTap: _initializeRooms,
+                  );
+                } else {
+                  return _buildSystemCard(
+                    icon: Icons.delete_sweep_rounded,
+                    title: 'Cleanup Audit Logs',
+                    description: 'Delete audit records older than 90 days to optimize performance',
+                    color: Colors.red,
+                    onTap: _cleanupAuditLogs,
+                  );
+                }
+              },
             ),
           ),
         ],
@@ -1404,65 +2685,57 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 5),
+              blurRadius: 10,
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: color, size: 32),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+              child: Icon(
+                icon,
+                color: color,
+                size: 28,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 20),
             Expanded(
-              child: Text(
-                description,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  'Run Task',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded, color: color, size: 18),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

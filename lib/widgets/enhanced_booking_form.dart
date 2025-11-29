@@ -119,6 +119,18 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
   }
 
   void _proceedToPayment() {
+    // Validate room availability
+    if (!widget.room.isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This room is currently not available for booking'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     // Validate dates
     if (_checkOut.isBefore(_checkIn) || _checkOut.isAtSameMomentAs(_checkIn)) {
       ScaffoldMessenger.of(context).showSnackBar(
