@@ -7,8 +7,9 @@ import '../services/user_service.dart';
 import '../models/user.dart';
 import '../models/room.dart';
 import '../widgets/social_feed.dart';
+import '../widgets/enhanced_booking_form.dart';
 import 'login_page.dart';
-import 'room_detail_page.dart';
+import 'room_detail_page.dart'; 
 import 'gallery_page.dart';
 import 'notifications_page.dart';
 import 'profile_page.dart';
@@ -32,6 +33,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   int _currentIndex = 0;
   AppUser? _currentUserProfile;
+  int _eventGuests = 10;
 
   @override
   void initState() {
@@ -145,6 +147,70 @@ class _HomePageState extends State<HomePage> {
         );
       }
     }
+  }
+
+  void _increaseEventGuests() {
+    setState(() {
+      _eventGuests++;
+    });
+  }
+
+  void _decreaseEventGuests() {
+    if (_eventGuests > 1) {
+      setState(() {
+        _eventGuests--;
+      });
+    }
+  }
+
+  void _startEventReservation() {
+    final user = _authService.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login to book an event.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_rooms.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No rooms are available for reservation at the moment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Pick the first room that can accommodate the event size
+    final suitableRooms = _rooms
+        .where((room) => room.isAvailable && room.capacity >= _eventGuests)
+        .toList();
+
+    if (suitableRooms.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'No rooms can accommodate $_eventGuests people. Try reducing the number of attendees.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final Room selectedRoom = suitableRooms.first;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EnhancedBookingForm(
+          room: selectedRoom,
+          initialGuests: _eventGuests,
+        ),
+      ),
+    );
   }
 
   Widget _buildHomeContent() {
@@ -302,6 +368,92 @@ class _HomePageState extends State<HomePage> {
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Quick Event Reservation
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.event, color: Colors.purple.shade600),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Plan an Event',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Reserve a space for your event and specify the number of attendees.',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Number of people',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.remove_circle_outline),
+                                              onPressed: _decreaseEventGuests,
+                                            ),
+                                            Text(
+                                              '$_eventGuests',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.add_circle_outline),
+                                              onPressed: _increaseEventGuests,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _startEventReservation,
+                                        icon: const Icon(Icons.arrow_forward),
+                                        label: const Text('Find event room'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.purple.shade600,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             const SizedBox(height: 20),

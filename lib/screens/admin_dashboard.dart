@@ -2726,25 +2726,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  DateTime? _selectedDate;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  bool _showBookingOnly = false;
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _selectDateRange(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialStart = _startDate ?? now.subtract(const Duration(days: 7));
+    final DateTime initialEnd = _endDate ?? now.add(const Duration(days: 7));
+
+    final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime(2100),
+      helpText: 'Select date range',
+      saveText: 'Apply',
     );
-    if (picked != null && picked != _selectedDate) {
+
+    if (picked != null) {
       setState(() {
-        _selectedDate = picked;
+        _startDate = picked.start;
+        _endDate = picked.end;
       });
     }
   }
 
   void _clearDateFilter() {
     setState(() {
-      _selectedDate = null;
+      _startDate = null;
+      _endDate = null;
     });
   }
 
@@ -2774,9 +2785,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     const Icon(Icons.filter_list_rounded, color: Colors.grey),
                     const SizedBox(width: 12),
                     Text(
-                      _selectedDate == null 
-                          ? 'Showing last 100 audit logs' 
-                          : 'Showing logs for ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                      () {
+                        final String prefix = _showBookingOnly
+                            ? 'Showing booking logs'
+                            : 'Showing audit logs';
+
+                        if (_startDate == null && _endDate == null) {
+                          return _showBookingOnly
+                              ? 'Showing last 100 booking logs'
+                              : 'Showing last 100 audit logs';
+                        } else if (_startDate != null && _endDate == null) {
+                          return '$prefix from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}';
+                        } else if (_startDate == null && _endDate != null) {
+                          return '$prefix up to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}';
+                        } else {
+                          return '$prefix from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} '
+                              'to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}';
+                        }
+                      }(),
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 14,
@@ -2784,7 +2810,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     const Spacer(),
-                    if (_selectedDate != null)
+                    if (_startDate != null || _endDate != null)
                       TextButton.icon(
                         onPressed: _clearDateFilter,
                         icon: const Icon(Icons.clear, size: 16),
@@ -2804,11 +2830,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _selectDate(context),
+                    onPressed: () => _selectDateRange(context),
                     icon: const Icon(Icons.calendar_today, size: 16),
-                    label: Text(_selectedDate == null 
-                        ? 'Filter by date' 
-                        : 'Change date'),
+                    label: Text(
+                      (_startDate == null || _endDate == null)
+                          ? 'Select date range'
+                          : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
+                            ' → '
+                            '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -2819,24 +2849,67 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilterChip(
+                    avatar: const Icon(Icons.book_rounded, size: 18),
+                    label: const Text('Bookings only'),
+                    selected: _showBookingOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showBookingOnly = selected;
+                      });
+                    },
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
           Expanded(
             child: StreamBuilder<List<AuditLog>>(
-              stream: _selectedDate == null 
-                  ? _auditTrail.getAuditLogs(limit: 100)
-                  : _auditTrail.getAuditLogs(
-                      startDate: DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day),
-                      endDate: DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day + 1),
-                    ),
+              stream: _auditTrail.getAuditLogs(
+                startDate: _startDate,
+                endDate: _endDate != null
+                    ? DateTime(
+                        _endDate!.year,
+                        _endDate!.month,
+                        _endDate!.day + 1,
+                      )
+                    : null,
+                limit: _startDate == null && _endDate == null ? 100 : null,
+              ),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Failed to load audit logs.\n${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final logs = snapshot.data!;
+                var logs = snapshot.data!;
+                if (_showBookingOnly) {
+                  logs = logs
+                      .where((log) => log.resourceType == 'booking')
+                      .toList();
+                }
+
+                if (logs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No audit logs found for the selected filters.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
 
                 return ListView.separated(
                   itemCount: logs.length,

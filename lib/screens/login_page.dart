@@ -344,7 +344,7 @@ class _LoginPageState extends State<LoginPage>
                                     width: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                                     ),
                                   )
                                 : const Text(
