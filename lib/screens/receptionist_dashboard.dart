@@ -62,12 +62,22 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
 
   Widget _buildSidebar(ThemeData theme) {
     return Container(
-      width: 260,
-      color: Colors.white,
+      width: 280,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(2, 0))],
+      ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Row(
               children: [
                 CircleAvatar(backgroundColor: theme.colorScheme.primary, child: Text(_currentUser?.displayName?.substring(0,1).toUpperCase() ?? 'R', style: const TextStyle(color: Colors.white))),
@@ -112,9 +122,44 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
 
   Widget _buildTopBar(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(18),
-      color: Colors.white,
-      child: Row(children: [ Text(_getTitle(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const Spacer(), ]),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
+      ),
+      child: Row(
+        children: [
+          Text(_getTitle(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          const Spacer(),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('user_notifications').where('userId', isEqualTo: _currentUser?.id ?? '').snapshots(),
+            builder: (context, snapshot) {
+              final docs = snapshot.data?.docs ?? [];
+              final unreadCount = docs.where((d) => (d.data() as Map<String, dynamic>)['isRead'] == false).length;
+              return Stack(
+                children: [
+                  IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {/* open notifications */}),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(unreadCount > 9 ? '9+' : unreadCount.toString(), style: const TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 12),
+          CircleAvatar(backgroundColor: theme.colorScheme.primary, child: Text(_currentUser?.displayName?.isNotEmpty == true ? _currentUser!.displayName![0].toUpperCase() : 'R', style: const TextStyle(color: Colors.white))),
+          const SizedBox(width: 12),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(_currentUser?.displayName ?? 'Receptionist', style: const TextStyle(fontWeight: FontWeight.w500)), Text(_currentUser?.email ?? '', style: TextStyle(fontSize: 12, color: Colors.grey[600]))])
+        ],
+      ),
     );
   }
 
@@ -139,7 +184,93 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
   }
 
   Widget _buildBookingsView() {
-    return _buildBookingsList();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatsGrid(),
+          const SizedBox(height: 24),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(flex: 2, child: Column(children: [_buildRecentBookingsCard(), const SizedBox(height: 20), _buildGuestRequestsCard()])),
+            const SizedBox(width: 20),
+            Expanded(child: _buildQuickActions()),
+          ])
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({required String title, required String value, required IconData icon, required List<Color> gradient}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), gradient: LinearGradient(colors: gradient)),
+      child: Row(children: [
+        Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: Colors.white)),
+        const SizedBox(width: 12),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white70)), Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))])
+      ]),
+    );
+  }
+
+  Widget _buildStatsGrid() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final docs = snapshot.data!.docs;
+        final total = docs.length;
+        final confirmed = docs.where((d) => (d.data() as Map<String, dynamic>)['status'] == 'confirmed').length;
+        final pending = docs.where((d) => (d.data() as Map<String, dynamic>)['status'] == 'pending').length;
+        double totalRevenue = 0;
+        for (var d in docs) { final data = d.data() as Map<String, dynamic>; final t = data['total']; if (t is num) totalRevenue += t.toDouble(); }
+
+        return Row(children: [
+          Expanded(child: _buildStatCard(title: 'Total Bookings', value: total.toString(), icon: Icons.book, gradient: [Colors.blue.shade400, Colors.blue.shade700])),
+          const SizedBox(width: 16),
+          Expanded(child: _buildStatCard(title: 'Confirmed', value: confirmed.toString(), icon: Icons.check_circle, gradient: [Colors.green.shade400, Colors.green.shade700])),
+          const SizedBox(width: 16),
+          Expanded(child: _buildStatCard(title: 'Revenue', value: '\$${totalRevenue.toStringAsFixed(2)}', icon: Icons.attach_money, gradient: [Colors.purple.shade400, Colors.purple.shade700])),
+        ]);
+      },
+    );
+  }
+
+  Widget _buildRecentBookingsCard() {
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(padding: const EdgeInsets.all(16), child: Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.hotel, color: Colors.blue.shade700)), const SizedBox(width: 12), const Text('Recent Bookings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))])),
+          const Divider(height: 0),
+          Padding(padding: const EdgeInsets.all(16), child: _buildBookingsList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestRequestsCard() {
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Padding(padding: const EdgeInsets.all(16), child: Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.support_agent, color: Colors.green.shade700)), const SizedBox(width: 12), const Text('Guest Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))])), const Divider(height: 0), Padding(padding: const EdgeInsets.all(16), child: _buildGuestRequestsView())]),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))]),
+      child: Column(children: [
+        ListTile(leading: Icon(Icons.add_box, color: Theme.of(context).colorScheme.primary), title: const Text('Create Booking'), onTap: () {/* TODO: Open create booking dialog */}),
+        const Divider(),
+        ListTile(leading: Icon(Icons.search, color: Colors.blueGrey), title: const Text('Search Guest'), onTap: () {/* TODO: open search */}),
+        const Divider(),
+        ListTile(leading: Icon(Icons.meeting_room, color: Colors.teal), title: const Text('Assign Room'), onTap: () {/* Show bookings*/}),
+        const Divider(),
+        ListTile(leading: Icon(Icons.receipt, color: Colors.purple), title: const Text('Generate Receipt'), onTap: () {/* TODO: Generate */}),
+      ]),
+    );
   }
 
   Widget _buildBookingsList() {
