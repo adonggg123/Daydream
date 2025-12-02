@@ -208,101 +208,104 @@ class _AdminDashboardState extends State<AdminDashboard> {
     bool isLogout = false,
   }) {
     final isSelected = _selectedIndex == index;
-
+    final color = isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color?.withOpacity(0.7);
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? theme.colorScheme.primary.withOpacity(0.1)
-            : Colors.transparent,
+      child: Material(
+        color: isSelected ? theme.colorScheme.primary.withOpacity(0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: isSelected
-            ? Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.3),
-                width: 1,
-              )
-            : null,
-      ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isSelected
-              ? theme.colorScheme.primary
-              : isLogout
-                  ? Colors.red.shade600
-                  : Colors.grey.shade700,
-          size: 24,
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : isLogout
-                    ? Colors.red.shade600
-                    : Colors.grey.shade800,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 15,
-          ),
-        ),
-        onTap: () {
-          if (isLogout) {
-            _handleLogout();
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        shape: RoundedRectangleBorder(
+        child: InkWell(
+            onTap: isLogout 
+              ? () => _handleLogout()
+              : () => setState(() => _selectedIndex = index),
           borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: isLogout ? Colors.red : color,
+                  size: 22,
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isLogout ? Colors.red : color,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+                const Spacer(),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
+  String _getTitle() {
+    switch (_selectedIndex) {
+      case 0:
+        return 'Dashboard';
+      case 1:
+        return 'Users';
+      case 2:
+        return 'Rooms';
+      case 3:
+        return 'Audit Trail';
+      case 4:
+        return 'System Settings';
+      default:
+        return 'Admin Panel';
+    }
+  }
+
   Widget _buildTopBar(ThemeData theme) {
     return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
           ),
-        ],
+        ),
       ),
       child: Row(
         children: [
           Text(
-            _getPageTitle(),
+            _getTitle(),
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
             ),
           ),
           const Spacer(),
-          // Notification Badge
           StreamBuilder<List<AdminNotification>>(
-            stream: _notificationService.getAdminNotifications(limit: 1),
+            stream: _notificationService.getAdminNotifications(),
             builder: (context, snapshot) {
-              final unreadCount = snapshot.hasData && snapshot.data!.isNotEmpty
-                  ? snapshot.data!.where((n) => !n.isRead).length
-                  : 0;
-              
+              final notifications = snapshot.data ?? [];
+              final unreadCount = notifications.where((n) => !n.isRead).length;
+                  
               return Stack(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.notifications_outlined, size: 28),
-                    color: Colors.grey.shade700,
+                    icon: const Icon(Icons.notifications_outlined),
                     onPressed: () {
-                      setState(() {
-                        _selectedIndex = 0; // Go to dashboard
-                      });
+                      // Show notifications
                     },
                   ),
                   if (unreadCount > 0)
@@ -310,17 +313,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       right: 8,
                       top: 8,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(2),
                         decoration: const BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
+                          minWidth: 16,
+                          minHeight: 16,
                         ),
                         child: Text(
-                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -334,18 +337,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
               );
             },
           ),
-          const SizedBox(width: 16),
-          // User Avatar
+          const SizedBox(width: 8),
           CircleAvatar(
-            radius: 20,
-            backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+            backgroundColor: theme.colorScheme.primary,
             child: Text(
-              _currentUser?.email[0].toUpperCase() ?? 'A',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
+              _currentUser?.displayName?.isNotEmpty == true
+                  ? _currentUser!.displayName![0].toUpperCase()
+                  : 'A',
+              style: const TextStyle(color: Colors.white),
             ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _currentUser?.displayName ?? 'Admin',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                _currentUser?.email ?? 'admin@example.com',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -369,22 +388,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  String _getPageTitle() {
-    switch (_selectedIndex) {
-      case 0:
-        return 'Dashboard';
-      case 1:
-        return 'User Management';
-      case 2:
-        return 'Room Management';
-      case 3:
-        return 'Audit Trail';
-      case 4:
-        return 'System Settings';
-      default:
-        return 'Dashboard';
-    }
-  }
+  // NOTE: _getTitle() already handles the page title for the Admin UI
 
   Widget _buildDashboardTab() {
     return SingleChildScrollView(
@@ -2474,6 +2478,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  DateTime? _selectedDate;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _selectedDate = null;
+    });
+  }
+
   Widget _buildAuditTrailTab() {
     return Container(
       padding: const EdgeInsets.all(32),
@@ -2492,15 +2518,57 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.filter_list_rounded, color: Colors.grey.shade600),
-                const SizedBox(width: 12),
-                Text(
-                  'Showing last 100 audit logs',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
+                Row(
+                  children: [
+                    const Icon(Icons.filter_list_rounded, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Text(
+                      _selectedDate == null 
+                          ? 'Showing last 100 audit logs' 
+                          : 'Showing logs for ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_selectedDate != null)
+                      TextButton.icon(
+                        onPressed: _clearDateFilter,
+                        icon: const Icon(Icons.clear, size: 16),
+                        label: const Text('Clear'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey[700], 
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectDate(context),
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(_selectedDate == null 
+                        ? 'Filter by date' 
+                        : 'Change date'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      side: BorderSide(color: Theme.of(context).primaryColor),
+                      foregroundColor: Theme.of(context).primaryColor,
+                    ),
                   ),
                 ),
               ],
@@ -2509,7 +2577,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 24),
           Expanded(
             child: StreamBuilder<List<AuditLog>>(
-              stream: _auditTrail.getAuditLogs(limit: 100),
+              stream: _selectedDate == null 
+                  ? _auditTrail.getAuditLogs(limit: 100)
+                  : _auditTrail.getAuditLogs(
+                      startDate: DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day),
+                      endDate: DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day + 1),
+                    ),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());

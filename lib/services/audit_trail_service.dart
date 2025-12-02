@@ -193,8 +193,8 @@ class AuditTrailService {
     }
 
     return query.snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => AuditLog.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+            return snapshot.docs
+              .map((doc) => AuditLog.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map)))
           .toList();
     });
   }
@@ -211,9 +211,9 @@ class AuditTrailService {
         .orderBy('timestamp', descending: true)
         .get();
 
-    return snapshot.docs
-        .map((doc) => AuditLog.fromMap(doc.id, doc.data() as Map<String, dynamic>))
-        .toList();
+        return snapshot.docs
+          .map((doc) => AuditLog.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map)))
+      .toList();
   }
 
   // Get user activity logs
