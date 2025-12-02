@@ -1,6 +1,7 @@
 enum UserRole {
   guest,
   staff,
+  receptionist,
   admin,
 }
 
@@ -67,11 +68,15 @@ class AppUser {
   // Check if user is staff
   bool get isStaff => role == UserRole.staff;
 
+  // Check if user is receptionist
+  bool get isReceptionist => role == UserRole.receptionist;
+
   // Check if user is guest
   bool get isGuest => role == UserRole.guest;
 
-  // Check if user has admin or staff privileges
-  bool get isStaffOrAdmin => role == UserRole.admin || role == UserRole.staff;
+  // Check if user has admin or staff or receptionist privileges
+  bool get isStaffOrAdmin =>
+      role == UserRole.admin || role == UserRole.staff || role == UserRole.receptionist;
 
   // Copy with method for updates
   AppUser copyWith({

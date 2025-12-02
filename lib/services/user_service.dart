@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user.dart';
+import 'role_based_access_control.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -97,7 +98,14 @@ class UserService {
   }
 
   // Update user role (admin only)
-  Future<void> updateUserRole(String userId, UserRole newRole) async {
+  Future<void> updateUserRole(String userId, UserRole newRole, {String? callerUserId}) async {
+    // Optional permission check; if callerUserId is provided, verify permission
+    if (callerUserId != null) {
+      final caller = await getUserProfile(callerUserId);
+      if (caller == null || !RoleBasedAccessControl.userHasPermission(caller, Permission.changeUserRoles)) {
+        throw Exception('Unauthorized: caller does not have permission to change user roles.');
+      }
+    }
     await _firestore.collection(_usersCollection).doc(userId).update({
       'role': newRole.name,
     });

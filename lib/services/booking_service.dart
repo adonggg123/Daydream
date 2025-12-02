@@ -7,6 +7,7 @@ import '../models/booking.dart';
 import 'audit_trail_service.dart';
 import 'user_service.dart';
 import 'notification_service.dart';
+import 'role_based_access_control.dart';
 
 class BookingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -115,6 +116,13 @@ class BookingService {
     bool isAvailable = true,
     String? userId,
   }) async {
+    // Optional service-level permission guard (if userId provided, check createRoom permission)
+    if (userId != null) {
+      final callerProfile = await _userService.getUserProfile(userId);
+      if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.createRoom)) {
+        throw Exception('Unauthorized: caller does not have permission to create rooms.');
+      }
+    }
     final roomRef = _firestore.collection(_roomsCollection).doc();
     final roomId = roomRef.id;
 
@@ -178,6 +186,13 @@ class BookingService {
       updateData['isAvailable'] = isAvailable;
     }
 
+    // Optional permissions guard
+    if (userId != null) {
+      final callerProfile = await _userService.getUserProfile(userId);
+      if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.editRoom)) {
+        throw Exception('Unauthorized: caller does not have permission to edit rooms.');
+      }
+    }
     await _firestore.collection(_roomsCollection).doc(roomId).update(updateData);
 
     // Log audit trail
@@ -202,6 +217,13 @@ class BookingService {
     required String roomId,
     String? userId,
   }) async {
+    // Optional permissions guard
+    if (userId != null) {
+      final callerProfile = await _userService.getUserProfile(userId);
+      if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.deleteRoom)) {
+        throw Exception('Unauthorized: caller does not have permission to delete rooms.');
+      }
+    }
     await _firestore.collection(_roomsCollection).doc(roomId).delete();
 
     // Log audit trail
@@ -349,7 +371,7 @@ class BookingService {
         .map((snapshot) {
       final bookings = snapshot.docs.map((doc) {
         try {
-          return Booking.fromMap(doc.id, doc.data());
+          return Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
         } catch (e) {
           debugPrint('Error parsing booking ${doc.id}: $e');
           return null;
@@ -369,7 +391,15 @@ class BookingService {
     required String paymentId,
     required bool isPaid,
     String? userId,
+    String? callerUserId,
   }) async {
+    // If callerUserId is provided, check permission
+    if (callerUserId != null) {
+      final callerProfile = await _userService.getUserProfile(callerUserId);
+      if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.editAllBookings)) {
+        throw Exception('Unauthorized: caller does not have permission to update booking payments.');
+      }
+    }
     await _firestore.collection(_bookingsCollection).doc(bookingId).update({
       'paymentId': paymentId,
       'isPaid': isPaid,
@@ -400,7 +430,14 @@ class BookingService {
   Future<void> cancelBooking({
     required String bookingId,
     required String userId,
+    String? callerUserId,
   }) async {
+    if (callerUserId != null) {
+      final callerProfile = await _userService.getUserProfile(callerUserId);
+      if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.cancelAllBookings)) {
+        throw Exception('Unauthorized: caller does not have permission to cancel bookings.');
+      }
+    }
     await _firestore.collection(_bookingsCollection).doc(bookingId).update({
       'status': BookingStatus.cancelled.name,
     });
@@ -417,6 +454,73 @@ class BookingService {
         resourceId: bookingId,
       );
     }
+  }
+
+  // Assign a room to an existing booking (used by receptionists/staff)
+  Future<void> assignRoomToBooking({
+    required String bookingId,
+    required String roomId,
+    required String roomName,
+    required String callerUserId,
+  }) async {
+    // Service-level permission guard: only check if caller has assignRoom permission
+    final callerProfile = await _userService.getUserProfile(callerUserId);
+    if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.assignRoom)) {
+      throw Exception('Unauthorized: caller does not have permission to assign rooms.');
+    }
+    await _firestore.collection(_bookingsCollection).doc(bookingId).update({
+      'roomId': roomId,
+      'roomName': roomName,
+      'status': BookingStatus.confirmed.name,
+    });
+
+    final userProfile = await _userService.getUserProfile(callerUserId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: callerUserId,
+        userEmail: userProfile.email,
+        userRole: userProfile.role,
+        action: AuditAction.bookingUpdated,
+        resourceType: 'booking',
+        resourceId: bookingId,
+        details: {
+          'roomId': roomId,
+          'roomName': roomName,
+        },
+      );
+      await _notificationService.createAdminBookingNotification(
+        bookingId: bookingId,
+        roomName: roomName,
+        userEmail: userProfile.email,
+        checkIn: DateTime.now(),
+        checkOut: DateTime.now(),
+        total: 0.0,
+      );
+    }
+  }
+
+  // Generate a simple receipt map for a booking
+  Future<Map<String, dynamic>?> generateReceiptForBooking(String bookingId, {required String callerUserId}) async {
+    // Service-level permission guard
+    final callerProfile = await _userService.getUserProfile(callerUserId);
+    if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.generateReceipt)) {
+      throw Exception('Unauthorized: caller does not have permission to generate receipts.');
+    }
+    final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+    if (!doc.exists) return null;
+
+    final booking = Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    final receipt = {
+      'receiptId': 'RCPT-${booking.id}',
+      'bookingId': booking.id,
+      'guestName': booking.userId,
+      'roomName': booking.roomName,
+      'checkIn': booking.checkIn.toIso8601String(),
+      'checkOut': booking.checkOut.toIso8601String(),
+      'total': booking.total,
+      'generatedAt': DateTime.now().toIso8601String(),
+    };
+    return receipt;
   }
 
   // Force initialize rooms - updates rooms while preserving availability status

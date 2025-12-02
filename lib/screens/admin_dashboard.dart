@@ -10,6 +10,8 @@ import '../services/booking_service.dart';
 import '../services/notification_service.dart';
 import '../models/admin_notification.dart';
 import '../services/auth_service.dart';
+import '../services/role_based_access_control.dart';
+import '../services/guest_request_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -23,6 +25,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final AuditTrailService _auditTrail = AuditTrailService();
   final BookingService _bookingService = BookingService();
   final NotificationService _notificationService = NotificationService();
+  final GuestRequestService _guestRequestService = GuestRequestService();
   final AuthService _authService = AuthService();
   AppUser? _currentUser;
   int _selectedIndex = 0;
@@ -44,7 +47,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    if (_currentUser == null || !_currentUser!.isAdmin) {
+    if (_currentUser == null || !_currentUser!.isStaffOrAdmin) {
       return Scaffold(
         backgroundColor: theme.colorScheme.background,
         appBar: AppBar(
@@ -160,35 +163,53 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   index: 0,
                   theme: theme,
                 ),
-                _buildNavItem(
-                  icon: Icons.people_rounded,
-                  label: 'Users',
-                  index: 1,
-                  theme: theme,
-                ),
-                _buildNavItem(
-                  icon: Icons.hotel_rounded,
-                  label: 'Rooms',
-                  index: 2,
-                  theme: theme,
-                ),
-                _buildNavItem(
-                  icon: Icons.history_rounded,
-                  label: 'Audit Trail',
-                  index: 3,
-                  theme: theme,
-                ),
-                _buildNavItem(
-                  icon: Icons.settings_rounded,
-                  label: 'System',
-                  index: 4,
-                  theme: theme,
-                ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewUsers))
+                  _buildNavItem(
+                    icon: Icons.people_rounded,
+                    label: 'Users',
+                    index: 1,
+                    theme: theme,
+                  ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewRooms))
+                  _buildNavItem(
+                    icon: Icons.hotel_rounded,
+                    label: 'Rooms',
+                    index: 2,
+                    theme: theme,
+                  ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewBookings))
+                  _buildNavItem(
+                    icon: Icons.book_rounded,
+                    label: 'Bookings',
+                    index: 3,
+                    theme: theme,
+                  ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.manageGuestRequests))
+                  _buildNavItem(
+                    icon: Icons.support_agent_rounded,
+                    label: 'Guest Requests',
+                    index: 4,
+                    theme: theme,
+                  ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewAuditTrail))
+                  _buildNavItem(
+                    icon: Icons.history_rounded,
+                    label: 'Audit Trail',
+                    index: 5,
+                    theme: theme,
+                  ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewSystemSettings))
+                  _buildNavItem(
+                    icon: Icons.settings_rounded,
+                    label: 'System',
+                    index: 6,
+                    theme: theme,
+                  ),
                 const Divider(height: 32),
                 _buildNavItem(
                   icon: Icons.logout_rounded,
                   label: 'Sign Out',
-                  index: 4,
+                  index: 99,
                   theme: theme,
                   isLogout: true,
                 ),
@@ -264,8 +285,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 2:
         return 'Rooms';
       case 3:
-        return 'Audit Trail';
+        return 'Bookings';
       case 4:
+        return 'Guest Requests';
+      case 5:
+        return 'Audit Trail';
+      case 6:
         return 'System Settings';
       default:
         return 'Admin Panel';
@@ -380,8 +405,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 2:
         return _buildRoomsTab();
       case 3:
-        return _buildAuditTrailTab();
+        return _buildBookingsTab();
       case 4:
+        return _buildGuestRequestsTab();
+      case 5:
+        return _buildAuditTrailTab();
+      case 6:
         return _buildSystemTab();
       default:
         return _buildDashboardTab();
@@ -418,6 +447,153 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: _buildQuickActions(),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Bookings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('bookings').orderBy('timestamp', descending: true).snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+              final bookings = snapshot.data!.docs;
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: bookings.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final b = bookings[index].data() as Map<String, dynamic>;
+                  return ListTile(
+                    title: Text(b['roomName'] ?? 'Unknown'),
+                    subtitle: Text('Guest: ${b['guestName'] ?? 'N/A'} - ${b['checkIn'] ?? ''} to ${b['checkOut'] ?? ''}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.assignRoom))
+                          IconButton(
+                            icon: const Icon(Icons.meeting_room),
+                            onPressed: () async {
+                              final rooms = await _bookingService.getAllRoomsForAdmin();
+                              final chosen = await showDialog<Room?>(
+                                context: context,
+                                builder: (context) => SimpleDialog(
+                                  title: const Text('Assign Room'),
+                                  children: rooms.map((room) {
+                                    return SimpleDialogOption(
+                                      child: Text('${room.name} - \$${room.price.toStringAsFixed(2)}'),
+                                      onPressed: () => Navigator.pop(context, room),
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                              if (chosen != null && _currentUser != null) {
+                                await _bookingService.assignRoomToBooking(
+                                  bookingId: bookings[index].id,
+                                  roomId: chosen.id,
+                                  roomName: chosen.name,
+                                  callerUserId: _currentUser!.id,
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Room assigned')));
+                                }
+                                setState(() {});
+                              }
+                            },
+                          ),
+                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.generateReceipt))
+                          IconButton(
+                            icon: const Icon(Icons.receipt),
+                            onPressed: () async {
+                              final receipt = await _bookingService.generateReceiptForBooking(bookings[index].id, callerUserId: _currentUser!.id);
+                              if (receipt != null) {
+                                if (mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Receipt'),
+                                      content: SelectableText(receipt.toString()),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestRequestsTab() {
+    if (_currentUser == null) return const SizedBox.shrink();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Guest Requests', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _guestRequestService.streamAllRequests(callerUserId: _currentUser!.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+              if (!snapshot.hasData || snapshot.data!.isEmpty) return const Center(child: Text('No guest requests'));
+              final requests = snapshot.data!;
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: requests.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final r = requests[index];
+                  return ListTile(
+                    title: Text(r['subject'] ?? 'Untitled'),
+                    subtitle: Text(r['description'] ?? ''),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.manageGuestRequests))
+                          IconButton(
+                            icon: const Icon(Icons.check_circle),
+                            onPressed: () async {
+                              await _guestRequestService.updateGuestRequest(requestId: r['id'], callerUserId: _currentUser!.id, status: 'resolved');
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guest request updated')));
+                            },
+                          ),
+                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.manageGuestRequests))
+                          IconButton(
+                            icon: const Icon(Icons.person_add),
+                            onPressed: () async {
+                              // assign to current user
+                              await _guestRequestService.updateGuestRequest(requestId: r['id'], callerUserId: _currentUser!.id, assignedToUserId: _currentUser!.id, status: 'assigned');
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assigned to you')));
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
@@ -737,6 +913,63 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                           ],
                         ),
+                        const SizedBox(width: 12),
+                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.assignRoom))
+                          IconButton(
+                            onPressed: () async {
+                              // Show assign room dialog
+                              final rooms = await _bookingService.getAllRoomsForAdmin();
+                              final chosen = await showDialog<Room?>(
+                                context: context,
+                                builder: (context) => SimpleDialog(
+                                  title: const Text('Assign Room'),
+                                      children: rooms.map((room) {
+                                    return SimpleDialogOption(
+                                      child: Text('${room.name} - \$${room.price.toStringAsFixed(2)}'),
+                                      onPressed: () => Navigator.pop(context, room),
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                              if (chosen != null && _currentUser != null) {
+                                await _bookingService.assignRoomToBooking(
+                                  bookingId: bookings[index].id,
+                                  roomId: chosen.id,
+                                  roomName: chosen.name,
+                                  callerUserId: _currentUser!.id,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Room assigned')));
+                                setState(() {});
+                              }
+                            },
+                            icon: const Icon(Icons.meeting_room),
+                            tooltip: 'Assign Room',
+                          ),
+                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.generateReceipt))
+                          IconButton(
+                            onPressed: () async {
+                              try {
+                                final receipt = await _bookingService.generateReceiptForBooking(bookings[index].id, callerUserId: _currentUser!.id);
+                                if (receipt != null) {
+                                  // Show a quick receipt dialog
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Receipt'),
+                                      content: SelectableText(receipt.toString()),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating receipt: $e')));
+                              }
+                            },
+                            icon: const Icon(Icons.receipt),
+                            tooltip: 'Generate Receipt',
+                          ),
                       ],
                     ),
                   );
@@ -1049,7 +1282,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               ElevatedButton.icon(
                 onPressed: () {
-                  _showCreateRoomDialog();
+                  if (_currentUser != null && RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.createRoom)) {
+                    _showCreateRoomDialog();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                  }
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Add New Room'),
@@ -1320,6 +1557,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           ElevatedButton(
             onPressed: () async {
+              if (_currentUser == null || !RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.deleteRoom)) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                return;
+              }
+              // Permission check for editing room
+              if (_currentUser == null || !RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.editRoom)) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                return;
+              }
               final userId = _authService.currentUser?.uid;
               if (userId == null) return;
 
@@ -2311,10 +2557,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildUserCard(AppUser user) {
     final roleColor = user.isAdmin
-        ? Colors.deepPurple
+      ? Colors.deepPurple
+      : user.isReceptionist
+        ? Colors.teal
         : user.isStaff
-            ? Colors.blueGrey
-            : Colors.grey;
+          ? Colors.blueGrey
+          : Colors.grey;
 
     return InkWell(
       onTap: () => _showUserDetails(user),
@@ -2893,7 +3141,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               groupValue: user.role,
               onChanged: (value) {
                 if (value != null) {
-                  _userService.updateUserRole(user.id, value);
+                  _userService.updateUserRole(user.id, value, callerUserId: _currentUser?.id);
                   _auditTrail.logAction(
                     userId: _currentUser!.id,
                     userEmail: _currentUser!.email,

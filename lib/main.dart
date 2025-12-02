@@ -7,6 +7,7 @@ import 'models/user.dart';
 import 'screens/landing_page.dart';
 import 'screens/home_page.dart';
 import 'screens/admin_dashboard.dart';
+import 'screens/receptionist_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,8 +80,13 @@ class AuthWrapper extends StatelessWidget {
 
               final appUser = userSnapshot.data;
 
-              if (appUser != null && appUser.isAdmin) {
-                return const AdminDashboard();
+              if (appUser != null) {
+                if (appUser.isReceptionist) {
+                  return const ReceptionistDashboard();
+                }
+                if (appUser.isStaffOrAdmin) {
+                  return const AdminDashboard();
+                }
               }
 
               // Default for guests/staff or missing profile

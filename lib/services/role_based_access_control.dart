@@ -15,6 +15,7 @@ enum Permission {
   createRoom,
   editRoom,
   deleteRoom,
+  assignRoom,
   
   // User management permissions
   viewUsers,
@@ -35,6 +36,10 @@ enum Permission {
   viewSystemSettings,
   editSystemSettings,
   viewReports,
+  // Receptionist permissions
+  generateReceipt,
+  sendNotifications,
+  manageGuestRequests,
 }
 
 class RoleBasedAccessControl {
@@ -69,6 +74,21 @@ class RoleBasedAccessControl {
       Permission.deleteOwnPost,
       Permission.editAllPosts,
       Permission.deleteAllPosts,
+    },
+    // Receptionist role: Manage reservations, assign rooms, handle guest requests, view guest info,
+    // generate receipts, and send notifications.
+    UserRole.receptionist: {
+      Permission.viewBookings,
+      Permission.createBooking,
+      Permission.viewAllBookings,
+      Permission.editAllBookings,
+      Permission.cancelAllBookings,
+      Permission.viewRooms,
+      Permission.assignRoom,
+      Permission.viewUsers,
+      Permission.generateReceipt,
+      Permission.sendNotifications,
+      Permission.manageGuestRequests,
     },
     UserRole.admin: {
       // Admins have all permissions

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'receptionist_dashboard.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../services/user_service.dart';
@@ -206,16 +207,15 @@ class _HomePageState extends State<HomePage> {
                         }
                       }
                     } else if (value == 'admin') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminDashboard(),
-                        ),
-                      );
+                      if (_currentUserProfile?.isReceptionist == true) {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
+                      } else {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+                      }
                     }
                   },
                   itemBuilder: (context) {
-                    final isAdmin = _currentUserProfile?.isAdmin ?? false;
+                    final isStaffOrAdmin = _currentUserProfile?.isStaffOrAdmin ?? false;
                     
                     return [
                       PopupMenuItem(
@@ -244,7 +244,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-                      if (isAdmin)
+                      if (isStaffOrAdmin)
                         PopupMenuItem(
                           value: 'admin',
                           child: const Row(

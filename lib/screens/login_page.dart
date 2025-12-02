@@ -7,6 +7,7 @@ import '../models/user.dart';
 import 'register_page.dart';
 import 'home_page.dart';
 import 'admin_dashboard.dart';
+import 'receptionist_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -75,12 +76,19 @@ class _LoginPageState extends State<LoginPage>
               }
             }
 
-            if (appUser != null && appUser.isAdmin) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                    builder: (context) => const AdminDashboard()),
-              );
-              return;
+            if (appUser != null) {
+              if (appUser.isReceptionist) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const ReceptionistDashboard()),
+                );
+                return;
+              }
+              if (appUser.isStaffOrAdmin) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const AdminDashboard()),
+                );
+                return;
+              }
             }
           }
 
@@ -524,11 +532,19 @@ class _LoginPageState extends State<LoginPage>
             }
           }
 
-          if (appUser != null && appUser.isAdmin) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const AdminDashboard()),
-            );
-            return;
+          if (appUser != null) {
+            if (appUser.isReceptionist) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const ReceptionistDashboard()),
+              );
+              return;
+            }
+            if (appUser.isStaffOrAdmin) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const AdminDashboard()),
+              );
+              return;
+            }
           }
         }
 
@@ -575,11 +591,19 @@ class _LoginPageState extends State<LoginPage>
             }
           }
 
-          if (appUser != null && appUser.isAdmin) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const AdminDashboard()),
-            );
-            return;
+          if (appUser != null) {
+            if (appUser.isReceptionist) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const ReceptionistDashboard()),
+              );
+              return;
+            }
+            if (appUser.isStaffOrAdmin) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const AdminDashboard()),
+              );
+              return;
+            }
           }
         }
 
