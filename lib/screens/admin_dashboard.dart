@@ -12,6 +12,9 @@ import '../models/admin_notification.dart';
 import '../services/auth_service.dart';
 import '../services/role_based_access_control.dart';
 import '../services/guest_request_service.dart';
+import '../services/event_booking_service.dart';
+import '../models/event_booking.dart';
+import '../models/booking.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -27,6 +30,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final NotificationService _notificationService = NotificationService();
   final GuestRequestService _guestRequestService = GuestRequestService();
   final AuthService _authService = AuthService();
+  final EventBookingService _eventBookingService = EventBookingService();
   AppUser? _currentUser;
   int _selectedIndex = 0;
 
@@ -179,9 +183,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewBookings))
                   _buildNavItem(
-                    icon: Icons.book_rounded,
-                    label: 'Bookings',
+                    icon: Icons.hotel_rounded,
+                    label: 'Room Bookings',
                     index: 3,
+                    theme: theme,
+                  ),
+                if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.viewBookings))
+                  _buildNavItem(
+                    icon: Icons.event_rounded,
+                    label: 'Event Bookings',
+                    index: 7,
                     theme: theme,
                   ),
                 if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.manageGuestRequests))
@@ -285,13 +296,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 2:
         return 'Rooms';
       case 3:
-        return 'Bookings';
+        return 'Room Bookings';
       case 4:
         return 'Guest Requests';
       case 5:
         return 'Audit Trail';
       case 6:
         return 'System Settings';
+      case 7:
+        return 'Event Bookings';
       default:
         return 'Admin Panel';
     }
@@ -405,13 +418,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 2:
         return _buildRoomsTab();
       case 3:
-        return _buildBookingsTab();
+        return _buildRoomBookingsTab();
       case 4:
         return _buildGuestRequestsTab();
       case 5:
         return _buildAuditTrailTab();
       case 6:
         return _buildSystemTab();
+      case 7:
+        return _buildEventBookingsTab();
       default:
         return _buildDashboardTab();
     }
@@ -453,7 +468,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildBookingsTab() {
+  Widget _buildRoomBookingsTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -472,66 +487,474 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 itemCount: bookings.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
-                  final b = bookings[index].data() as Map<String, dynamic>;
-                  return ListTile(
-                    title: Text(b['roomName'] ?? 'Unknown'),
-                    subtitle: Text('Guest: ${b['guestName'] ?? 'N/A'} - ${b['checkIn'] ?? ''} to ${b['checkOut'] ?? ''}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.assignRoom))
-                          IconButton(
-                            icon: const Icon(Icons.meeting_room),
-                            onPressed: () async {
-                              final rooms = await _bookingService.getAllRoomsForAdmin();
-                              final chosen = await showDialog<Room?>(
-                                context: context,
-                                builder: (context) => SimpleDialog(
-                                  title: const Text('Assign Room'),
-                                  children: rooms.map((room) {
-                                    return SimpleDialogOption(
-                                      child: Text('${room.name} - \$${room.price.toStringAsFixed(2)}'),
-                                      onPressed: () => Navigator.pop(context, room),
-                                    );
-                                  }).toList(),
+                  final doc = bookings[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final bookingId = doc.id;
+                  final status = BookingStatus.values.firstWhere(
+                    (s) => s.name == data['status'],
+                    orElse: () => BookingStatus.pending,
+                  );
+                  final isPending = status == BookingStatus.pending;
+                  
+                  return Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: status == BookingStatus.confirmed
+                              ? Colors.green.shade100
+                              : status == BookingStatus.rejected
+                                  ? Colors.red.shade100
+                                  : Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          status == BookingStatus.confirmed
+                              ? Icons.check_circle
+                              : status == BookingStatus.rejected
+                                  ? Icons.cancel
+                                  : Icons.pending,
+                          color: status == BookingStatus.confirmed
+                              ? Colors.green.shade700
+                              : status == BookingStatus.rejected
+                                  ? Colors.red.shade700
+                                  : Colors.orange.shade700,
+                          size: 24,
+                        ),
+                      ),
+                      title: Text(
+                        data['roomName'] ?? 'Unknown',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text('Guest: ${data['userId'] ?? 'N/A'}'),
+                          Text('${data['checkIn'] ?? ''} to ${data['checkOut'] ?? ''}'),
+                          Text(
+                            'Status: ${status.name.toUpperCase()}',
+                            style: TextStyle(
+                              color: status == BookingStatus.confirmed
+                                  ? Colors.green.shade700
+                                  : status == BookingStatus.rejected
+                                      ? Colors.red.shade700
+                                      : Colors.orange.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: isPending
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.check, color: Colors.green),
+                                  tooltip: 'Accept',
+                                  onPressed: () async {
+                                    if (_currentUser == null) return;
+                                    try {
+                                      await _bookingService.acceptBooking(
+                                        bookingId: bookingId,
+                                        callerUserId: _currentUser!.id,
+                                        checkConflicts: true,
+                                      );
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Booking accepted'),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Error'),
+                                            content: Text(e.toString()),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                              ),
+                                              if (e.toString().contains('Conflict'))
+                                                TextButton(
+                                                  onPressed: () async {
+                                                    Navigator.pop(context);
+                                                    // Accept anyway
+                                                    try {
+                                                      await _bookingService.acceptBooking(
+                                                        bookingId: bookingId,
+                                                        callerUserId: _currentUser!.id,
+                                                        checkConflicts: false,
+                                                      );
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          const SnackBar(
+                                                            content: Text('Booking accepted (conflicts ignored)'),
+                                                            backgroundColor: Colors.orange,
+                                                          ),
+                                                        );
+                                                      }
+                                                    } catch (e2) {
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text('Error: ${e2.toString()}'),
+                                                            backgroundColor: Colors.red,
+                                                          ),
+                                                        );
+                                                      }
+                                                    }
+                                                  },
+                                                  child: const Text('Accept Anyway'),
+                                                ),
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
                                 ),
-                              );
-                              if (chosen != null && _currentUser != null) {
-                                await _bookingService.assignRoomToBooking(
-                                  bookingId: bookings[index].id,
-                                  roomId: chosen.id,
-                                  roomName: chosen.name,
-                                  callerUserId: _currentUser!.id,
-                                );
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Room assigned')));
-                                }
-                                setState(() {});
-                              }
-                            },
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.red),
+                                  tooltip: 'Reject',
+                                  onPressed: () async {
+                                    if (_currentUser == null) return;
+                                    final reason = await showDialog<String>(
+                                      context: context,
+                                      builder: (context) {
+                                        final controller = TextEditingController();
+                                        return AlertDialog(
+                                          title: const Text('Reject Booking'),
+                                          content: TextField(
+                                            controller: controller,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Reason (optional)',
+                                              hintText: 'Enter rejection reason...',
+                                            ),
+                                            maxLines: 3,
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, controller.text),
+                                              child: const Text('Reject'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                    try {
+                                      await _bookingService.rejectBooking(
+                                          bookingId: bookingId,
+                                          callerUserId: _currentUser!.id,
+                                          reason: reason,
+                                        );
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Booking rejected'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: ${e.toString()}'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                  },
+                                ),
+                              ],
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventBookingsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Event Bookings',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('event_bookings')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final eventBookings = snapshot.data!.docs;
+              
+              if (eventBookings.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text(
+                      'No event bookings yet',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: eventBookings.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final doc = eventBookings[index] as DocumentSnapshot<Map<String, dynamic>>;
+                  final booking = EventBooking.fromSnapshot(doc);
+                  final eventDate = booking.eventDate;
+                  final peopleCount = booking.peopleCount;
+                  final userEmail = booking.userEmail;
+                  final notes = booking.notes;
+                  final eventType = booking.eventType;
+                  final status = booking.status;
+                  final isPending = status == EventBookingStatus.pending;
+
+                  return Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: status == EventBookingStatus.confirmed
+                              ? Colors.green.shade100
+                              : status == EventBookingStatus.rejected
+                                  ? Colors.red.shade100
+                                  : Colors.purple.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          status == EventBookingStatus.confirmed
+                              ? Icons.check_circle
+                              : status == EventBookingStatus.rejected
+                                  ? Icons.cancel
+                                  : Icons.event_rounded,
+                          color: status == EventBookingStatus.confirmed
+                              ? Colors.green.shade700
+                              : status == EventBookingStatus.rejected
+                                  ? Colors.red.shade700
+                                  : Colors.purple.shade700,
+                          size: 24,
+                        ),
+                      ),
+                      title: Text(
+                        Booking.getEventTypeDisplay(eventType),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text('Guest: $userEmail'),
+                          Text(
+                            'Date: ${eventDate.toLocal().toString().substring(0, 10)}',
                           ),
-                        if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.generateReceipt))
-                          IconButton(
-                            icon: const Icon(Icons.receipt),
-                            onPressed: () async {
-                              final receipt = await _bookingService.generateReceiptForBooking(bookings[index].id, callerUserId: _currentUser!.id);
-                              if (receipt != null) {
-                                if (mounted) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Receipt'),
-                                      content: SelectableText(receipt.toString()),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-                                      ],
-                                    ),
-                                  );
-                                }
-                              }
-                            },
+                          Text('People: $peopleCount'),
+                          Text(
+                            'Status: ${status.name.toUpperCase()}',
+                            style: TextStyle(
+                              color: status == EventBookingStatus.confirmed
+                                  ? Colors.green.shade700
+                                  : status == EventBookingStatus.rejected
+                                      ? Colors.red.shade700
+                                      : Colors.orange.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                      ],
+                          if (notes != null && notes.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Notes: $notes',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: isPending
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.check, color: Colors.green),
+                                  tooltip: 'Accept',
+                                  onPressed: () async {
+                                    if (_currentUser == null) return;
+                                    try {
+                                      await _eventBookingService.acceptEventBooking(
+                                        bookingId: booking.id,
+                                        callerUserId: _currentUser!.id,
+                                        checkConflicts: true,
+                                      );
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Event booking accepted'),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Error'),
+                                            content: Text(e.toString()),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                              ),
+                                              if (e.toString().contains('Conflict'))
+                                                TextButton(
+                                                  onPressed: () async {
+                                                    Navigator.pop(context);
+                                                    // Accept anyway
+                                                    try {
+                                                      await _eventBookingService.acceptEventBooking(
+                                                        bookingId: booking.id,
+                                                        callerUserId: _currentUser!.id,
+                                                        checkConflicts: false,
+                                                      );
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          const SnackBar(
+                                                            content: Text('Event booking accepted (conflicts ignored)'),
+                                                            backgroundColor: Colors.orange,
+                                                          ),
+                                                        );
+                                                      }
+                                                    } catch (e2) {
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text('Error: ${e2.toString()}'),
+                                                            backgroundColor: Colors.red,
+                                                          ),
+                                                        );
+                                                      }
+                                                    }
+                                                  },
+                                                  child: const Text('Accept Anyway'),
+                                                ),
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.red),
+                                  tooltip: 'Reject',
+                                  onPressed: () async {
+                                    if (_currentUser == null) return;
+                                    final reason = await showDialog<String>(
+                                      context: context,
+                                      builder: (context) {
+                                        final controller = TextEditingController();
+                                        return AlertDialog(
+                                          title: const Text('Reject Event Booking'),
+                                          content: TextField(
+                                            controller: controller,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Reason (optional)',
+                                              hintText: 'Enter rejection reason...',
+                                            ),
+                                            maxLines: 3,
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, controller.text),
+                                              child: const Text('Reject'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                    try {
+                                      await _eventBookingService.rejectEventBooking(
+                                          bookingId: booking.id,
+                                          callerUserId: _currentUser!.id,
+                                          reason: reason,
+                                        );
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Event booking rejected'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: ${e.toString()}'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                  },
+                                ),
+                              ],
+                            )
+                          : null,
                     ),
                   );
                 },
@@ -3159,6 +3582,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   IconData _getNotificationIcon(AdminNotificationType type) {
     switch (type) {
       case AdminNotificationType.bookingCreated:
+        return Icons.hotel_rounded;
+      case AdminNotificationType.eventBookingCreated:
         return Icons.event_available_rounded;
       case AdminNotificationType.bookingUpdated:
         return Icons.edit_calendar_rounded;

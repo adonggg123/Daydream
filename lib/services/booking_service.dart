@@ -432,12 +432,26 @@ class BookingService {
     required String userId,
     String? callerUserId,
   }) async {
+    final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Booking not found');
+    }
+
+    final booking = Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    
+    // If callerUserId is provided, check permissions; otherwise verify user owns the booking
     if (callerUserId != null) {
       final callerProfile = await _userService.getUserProfile(callerUserId);
       if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.cancelAllBookings)) {
         throw Exception('Unauthorized: caller does not have permission to cancel bookings.');
       }
+    } else {
+      // User canceling their own booking - allow even if accepted/rejected
+      if (booking.userId != userId) {
+        throw Exception('Unauthorized: You can only cancel your own bookings.');
+      }
     }
+
     await _firestore.collection(_bookingsCollection).doc(bookingId).update({
       'status': BookingStatus.cancelled.name,
     });
@@ -454,6 +468,235 @@ class BookingService {
         resourceId: bookingId,
       );
     }
+  }
+
+  // Edit booking (allows editing even if accepted/rejected/cancelled)
+  Future<void> editBooking({
+    required String bookingId,
+    required String userId,
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? guests,
+    String? specialRequests,
+    String? eventDetails,
+    EventType? eventType,
+  }) async {
+    final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Booking not found');
+    }
+
+    final booking = Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    
+    // Verify user owns the booking
+    if (booking.userId != userId) {
+      throw Exception('Unauthorized: You can only edit your own bookings.');
+    }
+
+    final updateData = <String, dynamic>{};
+    
+    // If booking was cancelled, reactivate it to pending status when edited
+    if (booking.status == BookingStatus.cancelled) {
+      updateData['status'] = BookingStatus.pending.name;
+    }
+    
+    if (checkIn != null) {
+      updateData['checkIn'] = checkIn.toIso8601String();
+    }
+    if (checkOut != null) {
+      updateData['checkOut'] = checkOut.toIso8601String();
+    }
+    if (guests != null) {
+      updateData['guests'] = guests;
+    }
+    if (specialRequests != null) {
+      updateData['specialRequests'] = specialRequests;
+    }
+    if (eventDetails != null) {
+      updateData['eventDetails'] = eventDetails;
+    }
+    if (eventType != null) {
+      updateData['eventType'] = eventType.name;
+    }
+
+    // If dates changed, recalculate pricing
+    if (checkIn != null || checkOut != null) {
+      final finalCheckIn = checkIn ?? booking.checkIn;
+      final finalCheckOut = checkOut ?? booking.checkOut;
+      final nights = finalCheckOut.difference(finalCheckIn).inDays;
+      final newSubtotal = booking.roomPrice * nights;
+      final newTax = newSubtotal * 0.1;
+      final newTotal = newSubtotal + newTax - booking.discount;
+      
+      updateData['subtotal'] = newSubtotal;
+      updateData['tax'] = newTax;
+      updateData['total'] = newTotal;
+      updateData['numberOfNights'] = nights;
+    }
+
+    await _firestore.collection(_bookingsCollection).doc(bookingId).update(updateData);
+
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userProfile.email,
+        userRole: userProfile.role,
+        action: AuditAction.bookingUpdated,
+        resourceType: 'booking',
+        resourceId: bookingId,
+        details: {
+          ...updateData,
+          'previousStatus': booking.status.name,
+        },
+      );
+    }
+  }
+
+  // Check for conflicting bookings (overlapping dates for the same room)
+  Future<List<Booking>> getConflictingBookings({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+    String? excludeBookingId,
+  }) async {
+    final snapshot = await _firestore
+        .collection(_bookingsCollection)
+        .where('roomId', isEqualTo: roomId)
+        .where('status', whereIn: [BookingStatus.confirmed.name, BookingStatus.pending.name])
+        .get();
+
+    final bookings = snapshot.docs
+        .map((doc) => Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map)))
+        .where((booking) {
+          if (excludeBookingId != null && booking.id == excludeBookingId) {
+            return false;
+          }
+          // Check if dates overlap
+          return (booking.checkIn.isBefore(checkOut) && booking.checkOut.isAfter(checkIn));
+        })
+        .toList();
+
+    return bookings;
+  }
+
+  // Accept a booking (admin action)
+  Future<void> acceptBooking({
+    required String bookingId,
+    required String callerUserId,
+    bool checkConflicts = true,
+  }) async {
+    final callerProfile = await _userService.getUserProfile(callerUserId);
+    if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.viewBookings)) {
+      throw Exception('Unauthorized: caller does not have permission to accept bookings.');
+    }
+
+    final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Booking not found');
+    }
+
+    final booking = Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    
+    if (booking.status != BookingStatus.pending) {
+      throw Exception('Only pending bookings can be accepted');
+    }
+
+    // Check for conflicts if requested
+    if (checkConflicts) {
+      final conflicts = await getConflictingBookings(
+        roomId: booking.roomId,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        excludeBookingId: bookingId,
+      );
+      
+      if (conflicts.isNotEmpty) {
+        throw Exception('Conflict detected: ${conflicts.length} overlapping booking(s) found. Please resolve conflicts first.');
+      }
+    }
+
+    await _firestore.collection(_bookingsCollection).doc(bookingId).update({
+      'status': BookingStatus.confirmed.name,
+    });
+
+    // Log audit trail
+    await _auditTrail.logAction(
+      userId: callerUserId,
+      userEmail: callerProfile.email,
+      userRole: callerProfile.role,
+      action: AuditAction.bookingUpdated,
+      resourceType: 'booking',
+      resourceId: bookingId,
+      details: {
+        'action': 'accepted',
+        'roomId': booking.roomId,
+        'roomName': booking.roomName,
+      },
+    );
+
+    // Notify user
+    await _notificationService.notifyUserBookingAccepted(
+      userId: booking.userId,
+      bookingId: bookingId,
+      roomName: booking.roomName,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+    );
+  }
+
+  // Reject a booking (admin action)
+  Future<void> rejectBooking({
+    required String bookingId,
+    required String callerUserId,
+    String? reason,
+  }) async {
+    final callerProfile = await _userService.getUserProfile(callerUserId);
+    if (callerProfile == null || !RoleBasedAccessControl.userHasPermission(callerProfile, Permission.viewBookings)) {
+      throw Exception('Unauthorized: caller does not have permission to reject bookings.');
+    }
+
+    final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Booking not found');
+    }
+
+    final booking = Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    
+    if (booking.status != BookingStatus.pending) {
+      throw Exception('Only pending bookings can be rejected');
+    }
+
+    await _firestore.collection(_bookingsCollection).doc(bookingId).update({
+      'status': BookingStatus.rejected.name,
+    });
+
+    // Log audit trail
+    await _auditTrail.logAction(
+      userId: callerUserId,
+      userEmail: callerProfile.email,
+      userRole: callerProfile.role,
+      action: AuditAction.bookingUpdated,
+      resourceType: 'booking',
+      resourceId: bookingId,
+      details: {
+        'action': 'rejected',
+        'reason': reason,
+        'roomId': booking.roomId,
+        'roomName': booking.roomName,
+      },
+    );
+
+    // Notify user
+    await _notificationService.notifyUserBookingRejected(
+      userId: booking.userId,
+      bookingId: bookingId,
+      roomName: booking.roomName,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      reason: reason,
+    );
   }
 
   // Assign a room to an existing booking (used by receptionists/staff)

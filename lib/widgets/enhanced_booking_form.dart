@@ -9,6 +9,8 @@ class EnhancedBookingForm extends StatefulWidget {
   final DateTime? initialCheckIn;
   final DateTime? initialCheckOut;
   final int? initialGuests;
+  final bool isEventBooking;
+  final EventType? initialEventType;
 
   const EnhancedBookingForm({
     super.key,
@@ -16,6 +18,8 @@ class EnhancedBookingForm extends StatefulWidget {
     this.initialCheckIn,
     this.initialCheckOut,
     this.initialGuests,
+    this.isEventBooking = false,
+    this.initialEventType,
   });
 
   @override
@@ -38,6 +42,11 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
     _checkIn = widget.initialCheckIn ?? today;
     _checkOut = widget.initialCheckOut ?? today.add(const Duration(days: 1));
     _guests = widget.initialGuests ?? 1;
+    
+    // If this is an event booking, pre-select event type
+    if (widget.isEventBooking) {
+      _selectedEventType = widget.initialEventType ?? EventType.other;
+    }
     
     // Ensure check-out is after check-in
     if (_checkOut.isBefore(_checkIn) || _checkOut.isAtSameMomentAs(_checkIn)) {
@@ -181,7 +190,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Complete Booking'),
+        title: Text(widget.isEventBooking ? 'Event Reservation' : 'Complete Booking'),
         backgroundColor: Colors.purple.shade600,
         foregroundColor: Colors.white,
         elevation: 0,

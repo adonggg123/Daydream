@@ -11,6 +11,7 @@ enum EventType {
 enum BookingStatus {
   pending,
   confirmed,
+  rejected,
   cancelled,
   completed,
 }

@@ -1,5 +1,6 @@
 enum AdminNotificationType {
   bookingCreated,
+  eventBookingCreated,
   bookingUpdated,
   bookingCancelled,
   paymentProcessed,
