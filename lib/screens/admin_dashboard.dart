@@ -31,6 +31,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final GuestRequestService _guestRequestService = GuestRequestService();
   final AuthService _authService = AuthService();
   final EventBookingService _eventBookingService = EventBookingService();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   AppUser? _currentUser;
   int _selectedIndex = 0;
 
@@ -65,24 +66,45 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: Row(
-        children: [
-          // Sidebar Navigation
-          _buildSidebar(theme),
-          // Main Content Area
-          Expanded(
-            child: Column(
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFFF5F7FA), // Light gray-blue background
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 768;
+          
+          if (isMobile) {
+            // Mobile layout with drawer
+            return Column(
               children: [
-                _buildTopBar(theme),
+                _buildTopBar(theme, isMobile: true),
                 Expanded(
                   child: _buildContent(),
                 ),
               ],
-            ),
-          ),
-        ],
+            );
+          } else {
+            // Desktop layout with sidebar
+            return Row(
+              children: [
+                // Sidebar Navigation
+                _buildSidebar(theme),
+                // Main Content Area
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildTopBar(theme),
+                      Expanded(
+                        child: _buildContent(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+        },
       ),
+      drawer: MediaQuery.of(context).size.width < 768 ? _buildMobileDrawer(theme) : null,
     );
   }
 
@@ -93,8 +115,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 20,
             offset: const Offset(2, 0),
           ),
         ],
@@ -103,15 +125,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           // Logo/Header Section
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              color: const Color(0xFF4A90E2), // Light blue
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
               ),
             ),
             child: Column(
@@ -120,15 +141,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
-                        Icons.admin_panel_settings,
+                        Icons.admin_panel_settings_rounded,
                         color: Colors.white,
-                        size: 28,
+                        size: 24,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -137,8 +158,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         'Admin Panel',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -148,8 +170,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Text(
                   _currentUser?.email ?? 'Admin',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withOpacity(0.85),
                     fontSize: 13,
+                    fontWeight: FontWeight.w400,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -240,42 +263,54 @@ class _AdminDashboardState extends State<AdminDashboard> {
     bool isLogout = false,
   }) {
     final isSelected = _selectedIndex == index;
-    final color = isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color?.withOpacity(0.7);
+    final lightBlue = const Color(0xFF4A90E2);
+    final lightBlueBg = const Color(0xFFE8F4FD);
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: Material(
-        color: isSelected ? theme.colorScheme.primary.withOpacity(0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        color: isSelected ? lightBlueBg : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
-            onTap: isLogout 
-              ? () => _handleLogout()
-              : () => setState(() => _selectedIndex = index),
-          borderRadius: BorderRadius.circular(12),
+          onTap: isLogout 
+            ? () => _handleLogout()
+            : () => setState(() => _selectedIndex = index),
+          borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  color: isLogout ? Colors.red : color,
-                  size: 22,
+                  color: isLogout 
+                    ? const Color(0xFFE74C3C)
+                    : isSelected 
+                      ? lightBlue 
+                      : const Color(0xFF6B7280),
+                  size: 20,
                 ),
-                const SizedBox(width: 16),
-                Text(
-                  label,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: isLogout ? Colors.red : color,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isLogout 
+                        ? const Color(0xFFE74C3C)
+                        : isSelected 
+                          ? lightBlue 
+                          : const Color(0xFF6B7280),
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 14,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 if (isSelected)
                   Container(
-                    width: 6,
-                    height: 6,
+                    width: 4,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
+                      color: lightBlue,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -284,6 +319,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMobileDrawer(ThemeData theme) {
+    return Drawer(
+      child: _buildSidebar(theme),
     );
   }
 
@@ -310,25 +351,42 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  Widget _buildTopBar(ThemeData theme) {
+  Widget _buildTopBar(ThemeData theme, {bool isMobile = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 32,
+        vertical: 20,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey.shade200,
+            color: Colors.grey.shade100,
             width: 1,
           ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
+          if (isMobile)
+            IconButton(
+              icon: const Icon(Icons.menu_rounded, color: Color(0xFF4A90E2)),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
           Text(
             _getTitle(),
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+              letterSpacing: -0.5,
             ),
           ),
           const Spacer(),
@@ -339,26 +397,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
               final unreadCount = notifications.where((n) => !n.isRead).length;
                   
               return Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined),
-                    onPressed: () {
-                      // Show notifications
-                    },
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Color(0xFF4A90E2),
+                      ),
+                      onPressed: () {
+                        // Show notifications
+                      },
+                    ),
                   ),
                   if (unreadCount > 0)
                     Positioned(
-                      right: 8,
-                      top: 8,
+                      right: 6,
+                      top: 6,
                       child: Container(
-                        padding: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
-                          color: Colors.red,
+                          color: Color(0xFFE74C3C),
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
                         child: Text(
                           unreadCount > 9 ? '9+' : unreadCount.toString(),
@@ -435,48 +503,74 @@ class _AdminDashboardState extends State<AdminDashboard> {
   // NOTE: _getTitle() already handles the page title for the Admin UI
 
   Widget _buildDashboardTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Stats Grid
-          _buildStatsGrid(),
-          const SizedBox(height: 32),
-          // Two Column Layout
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    _buildRecentBookings(),
-                    const SizedBox(height: 24),
-                    _buildAdminNotificationsCard(),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: _buildQuickActions(),
-              ),
+              // Stats Grid
+              _buildStatsGrid(isMobile: isMobile),
+              SizedBox(height: isMobile ? 24 : 32),
+              // Two Column Layout
+              isMobile
+                  ? Column(
+                      children: [
+                        _buildRecentBookings(),
+                        const SizedBox(height: 20),
+                        _buildAdminNotificationsCard(),
+                        const SizedBox(height: 20),
+                        _buildQuickActions(),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            children: [
+                              _buildRecentBookings(),
+                              const SizedBox(height: 24),
+                              _buildAdminNotificationsCard(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: _buildQuickActions(),
+                        ),
+                      ],
+                    ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildRoomBookingsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Bookings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          StreamBuilder<QuerySnapshot>(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Room Bookings',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+              letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('bookings').orderBy('timestamp', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
@@ -500,7 +594,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     elevation: 2,
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
@@ -508,10 +602,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: status == BookingStatus.confirmed
-                              ? Colors.green.shade100
+                              ? const Color(0xFF10B981).withOpacity(0.1)
                               : status == BookingStatus.rejected
-                                  ? Colors.red.shade100
-                                  : Colors.orange.shade100,
+                                  ? const Color(0xFFE74C3C).withOpacity(0.1)
+                                  : const Color(0xFFF59E0B).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -521,32 +615,63 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ? Icons.cancel
                                   : Icons.pending,
                           color: status == BookingStatus.confirmed
-                              ? Colors.green.shade700
+                              ? const Color(0xFF10B981)
                               : status == BookingStatus.rejected
-                                  ? Colors.red.shade700
-                                  : Colors.orange.shade700,
+                                  ? const Color(0xFFE74C3C)
+                                  : const Color(0xFFF59E0B),
                           size: 24,
                         ),
                       ),
                       title: Text(
                         data['roomName'] ?? 'Unknown',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                          fontSize: 16,
+                        ),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 4),
-                          Text('Guest: ${data['userId'] ?? 'N/A'}'),
-                          Text('${data['checkIn'] ?? ''} to ${data['checkOut'] ?? ''}'),
                           Text(
-                            'Status: ${status.name.toUpperCase()}',
-                            style: TextStyle(
+                            'Guest: ${data['userId'] ?? 'N/A'}',
+                            style: const TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${data['checkIn'] ?? ''} to ${data['checkOut'] ?? ''}',
+                            style: const TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
                               color: status == BookingStatus.confirmed
-                                  ? Colors.green.shade700
+                                  ? const Color(0xFF10B981).withOpacity(0.1)
                                   : status == BookingStatus.rejected
-                                      ? Colors.red.shade700
-                                      : Colors.orange.shade700,
-                              fontWeight: FontWeight.w500,
+                                      ? const Color(0xFFE74C3C).withOpacity(0.1)
+                                      : const Color(0xFFF59E0B).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              status.name.toUpperCase(),
+                              style: TextStyle(
+                                color: status == BookingStatus.confirmed
+                                    ? const Color(0xFF10B981)
+                                    : status == BookingStatus.rejected
+                                        ? const Color(0xFFE74C3C)
+                                        : const Color(0xFFF59E0B),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
                         ],
@@ -663,24 +788,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                           callerUserId: _currentUser!.id,
                                           reason: reason,
                                         );
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Booking rejected'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Error: ${e.toString()}'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Booking rejected'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
                                       }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: ${e.toString()}'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                               ],
@@ -692,8 +817,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
               );
             },
           ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -751,7 +878,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     elevation: 2,
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
@@ -932,24 +1059,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                           callerUserId: _currentUser!.id,
                                           reason: reason,
                                         );
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Event booking rejected'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Error: ${e.toString()}'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Event booking rejected'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
                                       }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: ${e.toString()}'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                               ],
@@ -1023,7 +1150,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildStatsGrid() {
+  Widget _buildStatsGrid({bool isMobile = false}) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
       builder: (context, snapshot) {
@@ -1054,6 +1181,56 @@ class _AdminDashboardState extends State<AdminDashboard> {
           }
         }
 
+        if (isMobile) {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Total Bookings',
+                      value: totalBookings.toString(),
+                      icon: Icons.book_rounded,
+                      color: const Color(0xFF4A90E2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Confirmed',
+                      value: confirmedBookings.toString(),
+                      icon: Icons.check_circle_rounded,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Pending',
+                      value: pendingBookings.toString(),
+                      icon: Icons.pending_rounded,
+                      color: const Color(0xFFF59E0B),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Total Revenue',
+                      value: '\$${totalRevenue.toStringAsFixed(0)}',
+                      icon: Icons.attach_money_rounded,
+                      color: const Color(0xFF8B5CF6),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
+
         return Row(
           children: [
             Expanded(
@@ -1061,8 +1238,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 title: 'Total Bookings',
                 value: totalBookings.toString(),
                 icon: Icons.book_rounded,
-                color: Colors.blue,
-                gradient: [Colors.blue.shade400, Colors.blue.shade600],
+                color: const Color(0xFF4A90E2),
               ),
             ),
             const SizedBox(width: 20),
@@ -1071,8 +1247,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 title: 'Confirmed',
                 value: confirmedBookings.toString(),
                 icon: Icons.check_circle_rounded,
-                color: Colors.green,
-                gradient: [Colors.green.shade400, Colors.green.shade600],
+                color: const Color(0xFF10B981),
               ),
             ),
             const SizedBox(width: 20),
@@ -1081,8 +1256,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 title: 'Pending',
                 value: pendingBookings.toString(),
                 icon: Icons.pending_rounded,
-                color: Colors.orange,
-                gradient: [Colors.orange.shade400, Colors.orange.shade600],
+                color: const Color(0xFFF59E0B),
               ),
             ),
             const SizedBox(width: 20),
@@ -1091,8 +1265,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 title: 'Total Revenue',
                 value: '\$${totalRevenue.toStringAsFixed(0)}',
                 icon: Icons.attach_money_rounded,
-                color: Colors.purple,
-                gradient: [Colors.purple.shade400, Colors.purple.shade600],
+                color: const Color(0xFF8B5CF6),
               ),
             ),
           ],
@@ -1106,66 +1279,59 @@ class _AdminDashboardState extends State<AdminDashboard> {
     required String value,
     required IconData icon,
     required Color color,
-    required List<Color> gradient,
   }) {
     return Container(
-      height: 170,
+      height: 150,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.max,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 24),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            Flexible(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      color: const Color(0xFF1F2937),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                      height: 1.0,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     title,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 13,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
+                      height: 1.0,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1183,12 +1349,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1203,7 +1369,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.hotel_rounded, color: Colors.blue.shade700),
                 ),
@@ -1264,7 +1430,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Row(
@@ -1274,7 +1440,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           height: 48,
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             Icons.hotel_rounded,
@@ -1410,12 +1576,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       margin: const EdgeInsets.only(top: 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1430,7 +1596,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.purple.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.notifications_active_rounded, color: Colors.purple.shade700),
                 ),
@@ -1491,7 +1657,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Row(
@@ -1501,7 +1667,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           height: 48,
                           decoration: BoxDecoration(
                             color: accent.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(icon, color: accent, size: 24),
                         ),
@@ -1554,12 +1720,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1574,7 +1740,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.flash_on_rounded, color: Colors.orange.shade700),
                 ),
@@ -1718,7 +1884,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
@@ -1968,25 +2134,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _showDeleteRoomDialog(Room room) {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Room'),
         content: Text('Are you sure you want to delete "${room.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
               if (_currentUser == null || !RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.deleteRoom)) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                if (mounted) {
+                  Navigator.of(dialogContext).pop();
+                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                }
                 return;
               }
               // Permission check for editing room
               if (_currentUser == null || !RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.editRoom)) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                if (mounted) {
+                  Navigator.of(dialogContext).pop();
+                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Unauthorized')));
+                }
                 return;
               }
               final userId = _authService.currentUser?.uid;
@@ -1999,8 +2172,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 );
 
                 if (mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  Navigator.of(dialogContext).pop();
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text('Room deleted successfully'),
                       backgroundColor: Colors.green,
@@ -2010,8 +2183,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 }
               } catch (e) {
                 if (mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  Navigator.of(dialogContext).pop();
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('Error deleting room: $e'),
                       backgroundColor: Colors.red,
@@ -2073,11 +2246,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           height: 150,
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             child: selectedImage != null
                                 ? Image.file(
                                     selectedImage!,
@@ -2241,11 +2414,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           height: 150,
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             child: selectedImage != null
                                 ? Image.file(
                                     selectedImage!,
@@ -2599,11 +2772,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           height: 150,
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             child: selectedImage != null
                                 ? Image.file(
                                     selectedImage!,
@@ -3103,7 +3276,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: roleColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           user.role.name.toUpperCase(),
@@ -3119,7 +3292,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: (user.isActive ? Colors.green : Colors.red).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           user.isActive ? 'ACTIVE' : 'INACTIVE',

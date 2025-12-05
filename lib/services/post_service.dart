@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/post.dart';
 import 'audit_trail_service.dart';
 import 'user_service.dart';
+import 'notification_service.dart';
 
 class PostService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'posts';
   final AuditTrailService _auditTrail = AuditTrailService();
   final UserService _userService = UserService();
+  final NotificationService _notificationService = NotificationService();
 
   // Create a new post
   Future<Post> createPost({
@@ -64,8 +67,9 @@ class PostService {
 
     final post = Post.fromMap(postId, postDoc.data()!);
     final List<String> likedBy = List<String>.from(post.likedBy);
+    final bool wasLiked = likedBy.contains(userId);
 
-    if (likedBy.contains(userId)) {
+    if (wasLiked) {
       likedBy.remove(userId);
     } else {
       likedBy.add(userId);
@@ -84,6 +88,20 @@ class PostService {
         resourceType: 'post',
         resourceId: postId,
       );
+      
+      // Send notification to post owner if post was liked (not unliked)
+      if (!wasLiked && post.userId != userId) {
+        try {
+          await _notificationService.notifyPostLiked(
+            postOwnerId: post.userId,
+            postId: postId,
+            likerEmail: userProfile.email,
+            postContent: post.content,
+          );
+        } catch (e) {
+          debugPrint('Error sending like notification: $e');
+        }
+      }
     }
   }
 
@@ -101,6 +119,8 @@ class PostService {
 
     final data = postDoc.data()!;
     final existingComments = data['comments'] as List<dynamic>? ?? [];
+    final postOwnerId = data['userId'] as String?;
+    final postContent = data['content'] as String? ?? '';
     
     final newComment = {
       'id': '${DateTime.now().millisecondsSinceEpoch}_$userId',
@@ -124,6 +144,21 @@ class PostService {
         resourceType: 'post',
         resourceId: postId,
       );
+      
+      // Send notification to post owner if commenter is not the post owner
+      if (postOwnerId != null && postOwnerId != userId) {
+        try {
+          await _notificationService.notifyPostCommented(
+            postOwnerId: postOwnerId,
+            postId: postId,
+            commenterEmail: userEmail,
+            commentContent: content,
+            postContent: postContent,
+          );
+        } catch (e) {
+          debugPrint('Error sending comment notification: $e');
+        }
+      }
     }
   }
 

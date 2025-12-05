@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/event_booking.dart';
 import '../models/booking.dart';
 import '../services/audit_trail_service.dart';
@@ -19,15 +20,29 @@ class EventBookingService {
 
   // Get user event bookings
   Stream<List<EventBooking>> getUserEventBookings(String userId) {
+    // Query without orderBy to avoid index requirement, then sort in memory
     return _firestore
         .collection(_collection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return EventBooking.fromSnapshot(doc);
-      }).toList();
+      final bookings = <EventBooking>[];
+      for (var doc in snapshot.docs) {
+        try {
+          final booking = EventBooking.fromSnapshot(
+            doc as DocumentSnapshot<Map<String, dynamic>>,
+          );
+          bookings.add(booking);
+        } catch (e) {
+          debugPrint('Error parsing event booking ${doc.id}: $e');
+          debugPrint('Document data: ${doc.data()}');
+          // Skip invalid documents
+          continue;
+        }
+      }
+      // Sort by createdAt descending (newest first)
+      bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return bookings;
     });
   }
 
@@ -345,6 +360,45 @@ class EventBookingService {
         action: AuditAction.bookingCancelled,
         resourceType: 'event_booking',
         resourceId: bookingId,
+      );
+    }
+  }
+
+  // Delete event booking (permanently removes from database)
+  Future<void> deleteEventBooking({
+    required String bookingId,
+    required String userId,
+  }) async {
+    final doc = await _firestore.collection(_collection).doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Event booking not found');
+    }
+
+    final booking = EventBooking.fromSnapshot(doc);
+    
+    // Verify user owns the booking
+    if (booking.userId != userId) {
+      throw Exception('Unauthorized: You can only delete your own event bookings.');
+    }
+
+    // Delete the booking document
+    await _firestore.collection(_collection).doc(bookingId).delete();
+
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userProfile.email,
+        userRole: userProfile.role,
+        action: AuditAction.bookingCancelled,
+        resourceType: 'event_booking',
+        resourceId: bookingId,
+        details: {
+          'action': 'deleted',
+          'eventType': booking.eventType.name,
+          'eventDate': booking.eventDate.toIso8601String(),
+        },
       );
     }
   }

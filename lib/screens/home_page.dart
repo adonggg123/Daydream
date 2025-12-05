@@ -4,6 +4,7 @@ import 'receptionist_dashboard.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../services/user_service.dart';
+import '../services/notification_service.dart';
 import '../models/user.dart';
 import '../models/room.dart';
 import '../widgets/social_feed.dart';
@@ -26,6 +27,7 @@ class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
   final BookingService _bookingService = BookingService();
   final UserService _userService = UserService();
+  final NotificationService _notificationService = NotificationService();
   final TextEditingController _searchController = TextEditingController();
   
   List<Room> _rooms = [];
@@ -562,7 +564,12 @@ class _HomePageState extends State<HomePage> {
       case 1:
         return const GalleryPage();
       case 2:
-        return const NotificationsPage();
+        return NotificationsPage(
+          onPageOpened: () {
+            // Refresh the notification count when page is opened
+            setState(() {});
+          },
+        );
       case 3:
         return const ProfilePage();
       default:
@@ -587,20 +594,58 @@ class _HomePageState extends State<HomePage> {
         unselectedItemColor: Colors.grey.shade600,
         selectedFontSize: 12,
         unselectedFontSize: 12,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.photo_library),
             label: 'Gallery',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
+            icon: StreamBuilder<int>(
+              stream: _authService.currentUser != null
+                  ? _notificationService.getUnreadNotificationCount(_authService.currentUser!.uid)
+                  : Stream.value(0),
+              builder: (context, snapshot) {
+                final unreadCount = snapshot.data ?? 0;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -6,
+                        top: -6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            unreadCount > 9 ? '9+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
             label: 'Notifications',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),

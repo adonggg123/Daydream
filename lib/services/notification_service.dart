@@ -105,7 +105,7 @@ class NotificationService {
   /// Send notification to user when their booking is accepted (system notification, no permission check)
   Future<void> notifyUserBookingAccepted({
     required String userId,
-    required String bookingId,
+    required String bookingId, 
     required String roomName,
     required DateTime checkIn,
     required DateTime checkOut,
@@ -169,23 +169,123 @@ class NotificationService {
     await docRef.set(data);
   }
 
-  /// Get user notifications stream
-  Stream<List<Map<String, dynamic>>> getUserNotifications(String userId, {int limit = 50}) {
+  /// Send notification to user when someone likes their post
+  Future<void> notifyPostLiked({
+    required String postOwnerId,
+    required String postId,
+    required String likerEmail,
+    required String postContent,
+  }) async {
+    final docRef = _firestore.collection(_userNotificationsCollection).doc();
+    final truncatedContent = postContent.length > 50 
+        ? '${postContent.substring(0, 50)}...' 
+        : postContent;
+    
+    final data = {
+      'title': 'New Like on Your Post',
+      'message': '$likerEmail liked your post: "$truncatedContent"',
+      'userId': postOwnerId,
+      'postId': postId,
+      'type': 'post_liked',
+      'createdAt': DateTime.now().toIso8601String(),
+      'isRead': false,
+    };
+    await docRef.set(data);
+  }
+
+  /// Send notification to user when someone comments on their post
+  Future<void> notifyPostCommented({
+    required String postOwnerId,
+    required String postId,
+    required String commenterEmail,
+    required String commentContent,
+    required String postContent,
+  }) async {
+    final docRef = _firestore.collection(_userNotificationsCollection).doc();
+    final truncatedComment = commentContent.length > 50 
+        ? '${commentContent.substring(0, 50)}...' 
+        : commentContent;
+    
+    final data = {
+      'title': 'New Comment on Your Post',
+      'message': '$commenterEmail commented: "$truncatedComment"',
+      'userId': postOwnerId,
+      'postId': postId,
+      'type': 'post_commented',
+      'createdAt': DateTime.now().toIso8601String(),
+      'isRead': false,
+    };
+    await docRef.set(data);
+  }
+
+  /// Get unread notification count for a user
+  Stream<int> getUnreadNotificationCount(String userId) {
+    // Query without isRead filter to avoid index requirement, then filter in memory
     return _firestore
         .collection(_userNotificationsCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      return snapshot.docs.where((doc) {
+        final data = doc.data();
+        return (data['isRead'] ?? false) == false;
+      }).length;
+    });
+  }
+
+  /// Get user notifications stream
+  Stream<List<Map<String, dynamic>>> getUserNotifications(String userId, {int limit = 50}) {
+    // Query without orderBy to avoid index requirement, then sort in memory
+    return _firestore
+        .collection(_userNotificationsCollection)
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+      final notifications = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
           'id': doc.id,
           ...data,
         };
       }).toList();
+      
+      // Sort by createdAt descending (newest first)
+      notifications.sort((a, b) {
+        final aDate = DateTime.parse(a['createdAt'] ?? DateTime.now().toIso8601String());
+        final bDate = DateTime.parse(b['createdAt'] ?? DateTime.now().toIso8601String());
+        return bDate.compareTo(aDate);
+      });
+      
+      // Apply limit after sorting
+      if (limit > 0 && notifications.length > limit) {
+        return notifications.take(limit).toList();
+      }
+      
+      return notifications;
     });
+  }
+
+  /// Mark notification as read
+  Future<void> markNotificationAsRead(String notificationId) async {
+    await _firestore
+        .collection(_userNotificationsCollection)
+        .doc(notificationId)
+        .update({'isRead': true});
+  }
+
+  /// Mark all notifications as read for a user
+  Future<void> markAllNotificationsAsRead(String userId) async {
+    final snapshot = await _firestore
+        .collection(_userNotificationsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+    
+    final batch = _firestore.batch();
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
   }
 }
 

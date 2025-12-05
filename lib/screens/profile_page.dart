@@ -228,20 +228,155 @@ class MyBookingsPage extends StatefulWidget {
 
 class _MyBookingsPageState extends State<MyBookingsPage> {
   final BookingService _bookingService = BookingService();
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialStart = _startDate ?? now.subtract(const Duration(days: 30));
+    final DateTime initialEnd = _endDate ?? now.add(const Duration(days: 30));
+
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      helpText: 'Select date range',
+      saveText: 'Apply',
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+  }
+
+  List<Booking> _filterBookings(List<Booking> bookings) {
+    if (_startDate == null && _endDate == null) {
+      return bookings;
+    }
+
+    return bookings.where((booking) {
+      final checkInDate = DateTime(booking.checkIn.year, booking.checkIn.month, booking.checkIn.day);
+      final checkOutDate = DateTime(booking.checkOut.year, booking.checkOut.month, booking.checkOut.day);
+      
+      if (_startDate != null && _endDate != null) {
+        final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+        // Check if booking overlaps with date range
+        return (checkInDate.isBefore(end.add(const Duration(days: 1))) && 
+                checkOutDate.isAfter(start.subtract(const Duration(days: 1))));
+      } else if (_startDate != null) {
+        final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        return checkOutDate.isAfter(start.subtract(const Duration(days: 1)));
+      } else if (_endDate != null) {
+        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+        return checkInDate.isBefore(end.add(const Duration(days: 1)));
+      }
+      return true;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Bookings'),
+        title: const Text('My Room Bookings'),
         backgroundColor: Colors.purple.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: StreamBuilder<List<Booking>>(
-        stream: _bookingService.getUserBookings(widget.userId),
-        builder: (context, snapshot) {
+      body: Column(
+        children: [
+          // Date Range Filter
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade200,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.filter_list_rounded, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _startDate == null && _endDate == null
+                            ? 'Showing all bookings'
+                            : _startDate != null && _endDate != null
+                                ? 'Showing bookings from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+                                : _startDate != null
+                                    ? 'Showing bookings from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
+                                    : 'Showing bookings up to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (_startDate != null || _endDate != null)
+                      TextButton.icon(
+                        onPressed: _clearDateFilter,
+                        icon: const Icon(Icons.clear, size: 16),
+                        label: const Text('Clear'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade700,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectDateRange(context),
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(
+                      (_startDate == null || _endDate == null)
+                          ? 'Select date range'
+                          : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year} → ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      side: BorderSide(color: Colors.purple.shade600),
+                      foregroundColor: Colors.purple.shade600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Bookings List
+          Expanded(
+            child: StreamBuilder<List<Booking>>(
+              stream: _bookingService.getUserBookings(widget.userId),
+              builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -306,16 +441,55 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
             );
           }
 
-          final bookings = snapshot.data!;
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              final booking = bookings[index];
-              return _buildBookingCard(context, booking);
-            },
-          );
-        },
+                final allBookings = snapshot.data!;
+                final filteredBookings = _filterBookings(allBookings);
+                
+                if (filteredBookings.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.hotel_outlined,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No bookings found',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _startDate != null || _endDate != null
+                              ? 'Try adjusting your date range filter'
+                              : 'Book a room to see your reservations here',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: filteredBookings.length,
+                  itemBuilder: (context, index) {
+                    final booking = filteredBookings[index];
+                    return _buildBookingCard(context, booking);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -491,23 +665,38 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _editBooking(context, booking),
-                        icon: const Icon(Icons.edit),
+                        icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Edit'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.purple.shade700,
                           side: BorderSide(color: Colors.purple.shade700),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _cancelBooking(context, booking),
-                        icon: const Icon(Icons.cancel),
+                        icon: const Icon(Icons.cancel, size: 18),
                         label: const Text('Cancel'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(color: Colors.orange),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteBooking(context, booking),
+                        icon: const Icon(Icons.delete, size: 18),
+                        label: const Text('Delete'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
@@ -678,6 +867,83 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
     }
   }
 
+  Future<void> _deleteBooking(BuildContext context, Booking booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Booking'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to permanently delete your booking for ${booking.roomName}?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone. The booking will be permanently removed.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _bookingService.deleteBooking(
+          bookingId: booking.id,
+          userId: widget.userId,
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Booking deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
@@ -695,6 +961,61 @@ class MyEventBookingsPage extends StatefulWidget {
 
 class _MyEventBookingsPageState extends State<MyEventBookingsPage> {
   final EventBookingService _eventBookingService = EventBookingService();
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialStart = _startDate ?? now.subtract(const Duration(days: 30));
+    final DateTime initialEnd = _endDate ?? now.add(const Duration(days: 30));
+
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      helpText: 'Select date range',
+      saveText: 'Apply',
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+  }
+
+  List<EventBooking> _filterEventBookings(List<EventBooking> bookings) {
+    if (_startDate == null && _endDate == null) {
+      return bookings;
+    }
+
+    return bookings.where((booking) {
+      final eventDate = DateTime(booking.eventDate.year, booking.eventDate.month, booking.eventDate.day);
+      
+      if (_startDate != null && _endDate != null) {
+        final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+        return eventDate.isAfter(start.subtract(const Duration(days: 1))) && 
+               eventDate.isBefore(end.add(const Duration(days: 1)));
+      } else if (_startDate != null) {
+        final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        return eventDate.isAfter(start.subtract(const Duration(days: 1)));
+      } else if (_endDate != null) {
+        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+        return eventDate.isBefore(end.add(const Duration(days: 1)));
+      }
+      return true;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -705,66 +1026,196 @@ class _MyEventBookingsPageState extends State<MyEventBookingsPage> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: StreamBuilder<List<EventBooking>>(
-        stream: _eventBookingService.getUserEventBookings(widget.userId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading event bookings',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No event bookings yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final bookings = snapshot.data!;
-          return ListView.builder(
+      body: Column(
+        children: [
+          // Date Range Filter
+          Container(
+            margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              final booking = bookings[index];
-              return _buildEventBookingCard(context, booking);
-            },
-          );
-        },
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade200,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.filter_list_rounded, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _startDate == null && _endDate == null
+                            ? 'Showing all event bookings'
+                            : _startDate != null && _endDate != null
+                                ? 'Showing events from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+                                : _startDate != null
+                                    ? 'Showing events from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
+                                    : 'Showing events up to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (_startDate != null || _endDate != null)
+                      TextButton.icon(
+                        onPressed: _clearDateFilter,
+                        icon: const Icon(Icons.clear, size: 16),
+                        label: const Text('Clear'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade700,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectDateRange(context),
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(
+                      (_startDate == null || _endDate == null)
+                          ? 'Select date range'
+                          : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year} → ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      side: BorderSide(color: Colors.purple.shade600),
+                      foregroundColor: Colors.purple.shade600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Event Bookings List
+          Expanded(
+            child: StreamBuilder<List<EventBooking>>(
+              stream: _eventBookingService.getUserEventBookings(widget.userId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error loading event bookings',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            snapshot.error.toString(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_busy,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No event bookings yet',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final allBookings = snapshot.data!;
+                final filteredBookings = _filterEventBookings(allBookings);
+                
+                if (filteredBookings.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_busy,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No event bookings found',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _startDate != null || _endDate != null
+                              ? 'Try adjusting your date range filter'
+                              : 'Book an event to see your reservations here',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: filteredBookings.length,
+                  itemBuilder: (context, index) {
+                    final booking = filteredBookings[index];
+                    return _buildEventBookingCard(context, booking);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -878,23 +1329,38 @@ class _MyEventBookingsPageState extends State<MyEventBookingsPage> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _editEventBooking(context, booking),
-                        icon: const Icon(Icons.edit),
+                        icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Edit'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.purple.shade700,
                           side: BorderSide(color: Colors.purple.shade700),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _cancelEventBooking(context, booking),
-                        icon: const Icon(Icons.cancel),
+                        icon: const Icon(Icons.cancel, size: 18),
                         label: const Text('Cancel'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(color: Colors.orange),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteEventBooking(context, booking),
+                        icon: const Icon(Icons.delete, size: 18),
+                        label: const Text('Delete'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
@@ -1015,7 +1481,7 @@ class _MyEventBookingsPageState extends State<MyEventBookingsPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
             child: const Text('Yes, Cancel'),
           ),
         ],
@@ -1032,6 +1498,83 @@ class _MyEventBookingsPageState extends State<MyEventBookingsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Event booking cancelled successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteEventBooking(BuildContext context, EventBooking booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Event Booking'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to permanently delete your ${Booking.getEventTypeDisplay(booking.eventType)} event booking?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone. The booking will be permanently removed.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _eventBookingService.deleteEventBooking(
+          bookingId: booking.id,
+          userId: widget.userId,
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Event booking deleted successfully'),
               backgroundColor: Colors.green,
             ),
           );

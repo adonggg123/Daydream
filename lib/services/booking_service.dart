@@ -470,6 +470,46 @@ class BookingService {
     }
   }
 
+  // Delete booking (permanently removes from database)
+  Future<void> deleteBooking({
+    required String bookingId,
+    required String userId,
+  }) async {
+    final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Booking not found');
+    }
+
+    final booking = Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    
+    // Verify user owns the booking
+    if (booking.userId != userId) {
+      throw Exception('Unauthorized: You can only delete your own bookings.');
+    }
+
+    // Delete the booking document
+    await _firestore.collection(_bookingsCollection).doc(bookingId).delete();
+    
+    // Log audit trail
+    final userProfile = await _userService.getUserProfile(userId);
+    if (userProfile != null) {
+      await _auditTrail.logAction(
+        userId: userId,
+        userEmail: userProfile.email,
+        userRole: userProfile.role,
+        action: AuditAction.bookingCancelled,
+        resourceType: 'booking',
+        resourceId: bookingId,
+        details: {
+          'action': 'deleted',
+          'roomName': booking.roomName,
+          'checkIn': booking.checkIn.toIso8601String(),
+          'checkOut': booking.checkOut.toIso8601String(),
+        },
+      );
+    }
+  }
+
   // Edit booking (allows editing even if accepted/rejected/cancelled)
   Future<void> editBooking({
     required String bookingId,

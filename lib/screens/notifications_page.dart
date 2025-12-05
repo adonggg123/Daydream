@@ -4,7 +4,9 @@ import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  final VoidCallback? onPageOpened;
+  
+  const NotificationsPage({super.key, this.onPageOpened});
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -14,6 +16,32 @@ class _NotificationsPageState extends State<NotificationsPage> {
   final AuthService _authService = AuthService();
   final NotificationService _notificationService = NotificationService();
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy HH:mm');
+  bool _hasMarkedAsRead = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark all notifications as read when page is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markAllAsRead();
+    });
+  }
+
+  Future<void> _markAllAsRead() async {
+    final user = _authService.currentUser;
+    if (user != null && !_hasMarkedAsRead) {
+      try {
+        await _notificationService.markAllNotificationsAsRead(user.uid);
+        _hasMarkedAsRead = true;
+        // Notify parent that page was opened
+        if (widget.onPageOpened != null) {
+          widget.onPageOpened!();
+        }
+      } catch (e) {
+        debugPrint('Error marking notifications as read: $e');
+      }
+    }
+  }
 
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
@@ -42,6 +70,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return Icons.event_available;
       case 'event_booking_rejected':
         return Icons.event_busy;
+      case 'post_liked':
+        return Icons.favorite;
+      case 'post_commented':
+        return Icons.comment;
       default:
         return Icons.notifications;
     }
@@ -55,6 +87,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'booking_rejected':
       case 'event_booking_rejected':
         return Colors.red;
+      case 'post_liked':
+        return Colors.pink;
+      case 'post_commented':
+        return Colors.blue;
       default:
         return Colors.blue;
     }
@@ -139,6 +175,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               final type = notification['type'] as String?;
               final icon = _getNotificationIcon(type);
               final color = _getNotificationColor(type);
+              final isRead = notification['isRead'] ?? false;
+              final notificationId = notification['id'] as String?;
               
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -146,6 +184,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                color: isRead ? Colors.white : Colors.blue.shade50,
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: color.withOpacity(0.2),
@@ -153,16 +192,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                   title: Text(
                     notification['title'] ?? 'Notification',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: isRead ? Colors.grey.shade800 : Colors.black87,
                     ),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text(notification['message'] ?? ''),
+                      Text(
+                        notification['message'] ?? '',
+                        style: TextStyle(
+                          color: isRead ? Colors.grey.shade600 : Colors.grey.shade800,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         _formatTime(createdAt),
@@ -173,6 +218,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ),
                     ],
                   ),
+                  trailing: !isRead
+                      ? Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                      : null,
+                  onTap: () {
+                    // Mark as read when tapped
+                    if (notificationId != null && !isRead) {
+                      _notificationService.markNotificationAsRead(notificationId);
+                    }
+                  },
                 ),
               );
             },
