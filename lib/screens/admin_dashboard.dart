@@ -110,7 +110,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildSidebar(ThemeData theme) {
     return Container(
-      width: 280,
+      width: 300,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -124,60 +124,91 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Column(
         children: [
           // Logo/Header Section
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2), // Light blue
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
+          Builder(
+            builder: (context) {
+              final isMobile = MediaQuery.of(context).size.width < 768;
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 20 : 24,
+                  vertical: isMobile ? 20 : 24,
                 ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.admin_panel_settings_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Admin Panel',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _currentUser?.email ?? 'Admin',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF4A90E2).withOpacity(0.9),
+                      const Color(0xFF4A90E2),
+                      const Color(0xFF357ABD),
+                    ],
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
                 ),
-              ],
-            ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 200;
+                    final logoContainerSize = isNarrow ? 60.0 : (isMobile ? 72.0 : 88.0);
+                    
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Logo from landing page
+                        Container(
+                          width: logoContainerSize,
+                          height: logoContainerSize,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Center(
+                              child: Transform.scale(
+                                scale: 2.8, // Increased to fill almost the entire circle
+                                child: Image.asset(
+                                  'assets/icons/LOGO2.png',
+                                  width: logoContainerSize * 0.9,   // Use container size for better scaling
+                                  height: logoContainerSize * 0.9,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: isNarrow ? 12 : 16),
+                        // Admin Panel text
+                        Expanded(
+                          child: Text(
+                            'Admin Panel',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isNarrow ? 18 : (isMobile ? 22 : 24),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
           ),
           // Navigation Items
           Expanded(
@@ -1284,7 +1315,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
       height: 150,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.7),
+            color.withOpacity(0.9),
+            color.withOpacity(1.0),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -1302,10 +1341,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: Colors.white, size: 20),
             ),
             Expanded(
               child: Column(
@@ -1314,8 +1353,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 children: [
                   Text(
                     value,
-                    style: TextStyle(
-                      color: const Color(0xFF1F2937),
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
@@ -1327,8 +1366,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   const SizedBox(height: 2),
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       height: 1.0,
