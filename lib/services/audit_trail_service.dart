@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 
 enum AuditAction {
@@ -146,7 +147,14 @@ class AuditTrailService {
       await logRef.set(auditLog.toMap());
     } catch (e) {
       // Log error but don't throw - audit trail failures shouldn't break the app
-      print('Error logging audit trail: $e');
+      // Silently handle permission errors - they're expected if Firestore rules restrict access
+      if (e.toString().contains('permission-denied')) {
+        // Permission denied is expected if security rules restrict audit log writes
+        // This is fine - audit logging is optional and shouldn't break functionality
+        return;
+      }
+      // Only log non-permission errors for debugging
+      debugPrint('Error logging audit trail: $e');
     }
   }
 

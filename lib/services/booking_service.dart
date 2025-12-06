@@ -70,9 +70,21 @@ class BookingService {
   // Stream all rooms for admin (real-time updates)
   Stream<List<Room>> streamAllRoomsForAdmin() {
     return _firestore.collection(_roomsCollection).snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Room.fromMap(doc.id, doc.data()))
-          .toList();
+      final rooms = <Room>[];
+      for (final doc in snapshot.docs) {
+        try {
+          final room = Room.fromMap(doc.id, doc.data());
+          rooms.add(room);
+        } catch (e) {
+          debugPrint('Error parsing room ${doc.id}: $e');
+          // Continue processing other rooms even if one fails
+        }
+      }
+      return rooms;
+    }).handleError((error) {
+      debugPrint('Error in streamAllRoomsForAdmin: $error');
+      // Return empty list on error instead of crashing
+      return <Room>[];
     });
   }
 

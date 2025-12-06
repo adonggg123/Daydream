@@ -52,6 +52,22 @@ class EventBooking {
 
   static EventBooking fromSnapshot(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
+    
+    // Handle null timestamps safely
+    DateTime parseTimestamp(dynamic timestamp) {
+      if (timestamp == null) {
+        return DateTime.now();
+      }
+      if (timestamp is Timestamp) {
+        return timestamp.toDate();
+      }
+      if (timestamp is DateTime) {
+        return timestamp;
+      }
+      // Fallback to current date if type is unexpected
+      return DateTime.now();
+    }
+    
     return EventBooking(
       id: doc.id,
       userId: data['userId'] ?? '',
@@ -60,14 +76,14 @@ class EventBooking {
         (e) => e.name == data['eventType'],
         orElse: () => EventType.other,
       ),
-      eventDate: (data['eventDate'] as Timestamp).toDate(),
+      eventDate: parseTimestamp(data['eventDate']),
       peopleCount: data['peopleCount'] ?? 0,
       notes: data['notes'],
       status: EventBookingStatus.values.firstWhere(
         (s) => s.name == data['status'],
         orElse: () => EventBookingStatus.pending,
       ),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: parseTimestamp(data['createdAt']),
     );
   }
 }
