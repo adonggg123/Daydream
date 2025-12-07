@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Initialize animations
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2500),
       vsync: this,
     );
 
@@ -34,14 +34,14 @@ class _SplashScreenState extends State<SplashScreen>
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
       ),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
       ),
     );
 
@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     // Logo scale animation for enlargement
-    _logoScaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+    _logoScaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
@@ -64,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen>
     _buttonOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
+        curve: const Interval(0.8, 1.0, curve: Curves.easeInOut),
       ),
     );
 
@@ -198,8 +198,8 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Opacity(
                           opacity: _opacityAnimation.value,
                           child: Container(
-                            width: 200, // Increased from 180
-                            height: 200, // Increased from 180
+                            width: 180,
+                            height: 180,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -224,14 +224,24 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             child: ClipOval(
                               child: Center(
-                                child: Transform.scale(
-                                  scale: _logoEnlarged ? 1.5 : 1.0, // Scale up the logo inside
-                                  child: Image.asset(
-                                    'assets/icons/LOGO2.png',
-                                    width: _logoEnlarged ? 170 : 140, // Adjust size when enlarged
-                                    height: _logoEnlarged ? 170 : 140,
-                                    fit: BoxFit.contain,
-                                  ),
+                                child: AnimatedBuilder(
+                                  animation: _controller,
+                                  builder: (context, child) {
+                                    final baseScale = _logoEnlarged ? 2.6 : 2.4;
+                                    final animationScale = _logoEnlarged 
+                                        ? (_logoScaleAnimation.value - 1.0) * 0.15
+                                        : (_scaleAnimation.value - 0.5) * 0.15;
+                                    final logoScale = baseScale + animationScale;
+                                    return Transform.scale(
+                                      scale: logoScale,
+                                      child: Image.asset(
+                                        'assets/icons/LOGO2.png',
+                                        width: 500,
+                                        height: 500,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
