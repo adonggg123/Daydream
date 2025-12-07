@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/room.dart';
 import '../widgets/enhanced_booking_form.dart';
+import 'theme_constants.dart';
 
 class RoomDetailPage extends StatelessWidget {
   final Room room;
@@ -17,9 +18,9 @@ class RoomDetailPage extends StatelessWidget {
     final defaultCheckOut = today.add(const Duration(days: 1));
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         slivers: [
-          // App Bar with Image
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
@@ -30,50 +31,130 @@ class RoomDetailPage extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: Colors.purple.shade100,
-                          child: const Icon(
-                            Icons.hotel,
-                            size: 100,
-                            color: Colors.purple,
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.hotel,
+                              size: 100,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                           ),
                         );
                       },
                     )
                   : Container(
-                      color: Colors.purple.shade100,
-                      child: const Icon(
-                        Icons.hotel,
-                        size: 100,
-                        color: Colors.purple,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.hotel,
+                          size: 100,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
                       ),
                     ),
             ),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.black87,
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(),
             ),
+            actions: [
+              IconButton(
+                icon: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.favorite_border,
+                    color: Colors.black87,
+                  ),
+                ),
+                onPressed: () {},
+              ),
+            ],
           ),
 
-          // Room Details
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Room Name and Price
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: room.isAvailable 
+                          ? AppTheme.successColor.withOpacity(0.1)
+                          : AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          room.isAvailable ? Icons.check_circle : Icons.block,
+                          size: 14,
+                          color: room.isAvailable ? AppTheme.successColor : AppTheme.errorColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          room.isAvailable ? 'Available' : 'Not Available',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: room.isAvailable ? AppTheme.successColor : AppTheme.errorColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          room.name,
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade900,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              room.name,
+                              style: AppTheme.heading2,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.people,
+                                  size: 16,
+                                  color: AppTheme.textSecondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Up to ${room.capacity} ${room.capacity > 1 ? 'guests' : 'guest'}',
+                                  style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                       Column(
@@ -81,150 +162,212 @@ class RoomDetailPage extends StatelessWidget {
                         children: [
                           Text(
                             '\$${room.price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.purple.shade600,
+                            style: AppTheme.heading2.copyWith(
+                              color: AppTheme.primaryColor,
                             ),
                           ),
                           Text(
                             'per night',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
+                            style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Capacity
-                  Row(
-                    children: [
-                      Icon(Icons.people, size: 20, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Up to ${room.capacity} guest${room.capacity > 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 24),
 
-                  // Description
                   Text(
                     'Description',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade900,
-                    ),
+                    style: AppTheme.heading3,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     room.description,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade700,
-                      height: 1.5,
+                    style: AppTheme.bodyLarge.copyWith(
+                      color: AppTheme.textSecondary,
+                      height: 1.6,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // Amenities
                   if (room.amenities.isNotEmpty) ...[
                     Text(
                       'Amenities',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade900,
-                      ),
+                      style: AppTheme.heading3,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 12,
+                      runSpacing: 12,
                       children: room.amenities.map((amenity) {
-                        return Chip(
-                          label: Text(amenity),
-                          backgroundColor: Colors.purple.shade50,
-                          labelStyle: TextStyle(
-                            color: Colors.purple.shade700,
-                            fontWeight: FontWeight.w500,
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.primaryColor.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getAmenityIcon(amenity),
+                                size: 16,
+                                color: AppTheme.primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                amenity,
+                                style: AppTheme.bodyMedium.copyWith(
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 40),
                   ],
 
-                  // Book Now Button or Not Available Message
                   if (!room.isAvailable)
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.red.shade200,
-                          width: 2,
-                        ),
+                        color: AppTheme.errorColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.errorColor.withOpacity(0.2)),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Column(
                         children: [
-                          Icon(Icons.block, color: Colors.red.shade700),
-                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.block,
+                            size: 48,
+                            color: AppTheme.errorColor,
+                          ),
+                          const SizedBox(height: 16),
                           Text(
-                            'Not Available for Booking',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red.shade700,
-                            ),
+                            'Currently Unavailable',
+                            style: AppTheme.heading3.copyWith(color: AppTheme.errorColor),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'This room is not available for booking at the moment. Please check back later or explore other rooms.',
+                            style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: AppTheme.secondaryButtonStyle,
+                            child: const Text('Browse Other Rooms'),
                           ),
                         ],
                       ),
                     )
                   else
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => EnhancedBookingForm(
-                                room: room,
-                                initialCheckIn: defaultCheckIn,
-                                initialCheckOut: defaultCheckOut,
-                                initialGuests: 1,
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.calendar_today,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Ready to Book?',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Select your dates and book this room',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => EnhancedBookingForm(
+                                      room: room,
+                                      initialCheckIn: defaultCheckIn,
+                                      initialCheckOut: defaultCheckOut,
+                                      initialGuests: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppTheme.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Book Now',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Icon(Icons.arrow_forward, size: 20),
+                                ],
                               ),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple.shade600,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
                           ),
-                          elevation: 4,
-                        ),
-                        child: const Text(
-                          'Book Now',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 20),
@@ -236,5 +379,31 @@ class RoomDetailPage extends StatelessWidget {
       ),
     );
   }
-}
 
+  IconData _getAmenityIcon(String amenity) {
+    switch (amenity.toLowerCase()) {
+      case 'wifi':
+        return Icons.wifi;
+      case 'air conditioning':
+        return Icons.ac_unit;
+      case 'tv':
+        return Icons.tv;
+      case 'minibar':
+        return Icons.local_bar;
+      case 'safe':
+        return Icons.security;
+      case 'balcony':
+        return Icons.balcony;
+      case 'bathtub':
+        return Icons.bathtub;
+      case 'shower':
+        return Icons.shower;
+      case 'coffee maker':
+        return Icons.coffee;
+      case 'fridge':
+        return Icons.kitchen;
+      default:
+        return Icons.check_circle;
+    }
+  }
+}

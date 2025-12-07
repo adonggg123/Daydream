@@ -76,6 +76,22 @@ class _LoginPageState extends State<LoginPage>
               }
             }
 
+            // Check if user is active
+            if (appUser != null && !appUser.isActive) {
+              // Sign out the user if they're deactivated
+              await _authService.signOut();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Your account has been deactivated. Please contact an administrator.'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              return;
+            }
+
             if (appUser != null) {
               if (appUser.isReceptionist) {
                 Navigator.of(context).pushReplacement(
@@ -445,7 +461,7 @@ class _LoginPageState extends State<LoginPage>
                                             prefixIcon: Icon(Icons.lock_outlined, color: Colors.grey.shade600),
                                             suffixIcon: IconButton(
                                               icon: Icon(
-                                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                                 color: Colors.grey.shade600,
                                               ),
                                               onPressed: () {
@@ -694,6 +710,22 @@ class _LoginPageState extends State<LoginPage>
             }
           }
 
+          // Check if user is active
+          if (appUser != null && !appUser.isActive) {
+            // Sign out the user if they're deactivated
+            await _authService.signOut();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Your account has been deactivated. Please contact an administrator.'),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            return;
+          }
+
           if (appUser != null) {
             if (appUser.isReceptionist) {
               Navigator.of(context).pushReplacement(
@@ -751,6 +783,22 @@ class _LoginPageState extends State<LoginPage>
             if (matches.isNotEmpty) {
               appUser = matches.first;
             }
+          }
+
+          // Check if user is active
+          if (appUser != null && !appUser.isActive) {
+            // Sign out the user if they're deactivated
+            await _authService.signOut();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Your account has been deactivated. Please contact an administrator.'),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            return;
           }
 
           if (appUser != null) {

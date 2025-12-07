@@ -6,6 +6,7 @@ import '../models/booking.dart';
 import '../services/booking_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
+import 'theme_constants.dart';
 
 class BookingConfirmationPage extends StatefulWidget {
   final Room room;
@@ -63,7 +64,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
   }
 
   Future<void> _processPayment() async {
-    // Validate card number (at least 13 digits, can be up to 19)
     final cardNumber = _cardNumberController.text.replaceAll(RegExp(r'\D'), '');
     if (cardNumber.length < 13 || cardNumber.length > 19) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +75,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
       return;
     }
 
-    // Validate expiry (MM/YY format)
     final expiry = _expiryController.text.trim();
     if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(expiry)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +86,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
       return;
     }
 
-    // Validate CVV (3-4 digits)
     final cvv = _cvvController.text.trim();
     if (cvv.length < 3 || cvv.length > 4) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,7 +97,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
       return;
     }
 
-    // Validate cardholder name
     if (_cardNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -115,7 +112,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
     });
 
     try {
-      // Process payment
       final paymentResult = await PaymentService.processPayment(
         amount: _bookingCost.total,
         currency: 'USD',
@@ -128,7 +124,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
       );
 
       if (paymentResult.success && paymentResult.paymentId != null) {
-        // Create booking
         final authService = AuthService();
         final user = authService.currentUser;
         
@@ -194,342 +189,467 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
     final numberOfNights = widget.checkOut.difference(widget.checkIn).inDays;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Booking Confirmation'),
-        backgroundColor: Colors.purple.shade600,
+        title: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/icons/LOGO2.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Booking Confirmation',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Room Details Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.room.name,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.room.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_dateFormat.format(widget.checkIn)} - ${_dateFormat.format(widget.checkOut)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.bed, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$numberOfNights ${numberOfNights == 1 ? 'night' : 'nights'}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.people, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${widget.guests} ${widget.guests == 1 ? 'guest' : 'guests'}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (widget.eventType != EventType.none) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.event, size: 16, color: Colors.purple.shade600),
-                          const SizedBox(width: 8),
-                          Text(
-                            Booking.getEventTypeDisplay(widget.eventType),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.purple.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Cost Breakdown Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Cost Breakdown',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildCostRow(
-                      'Room (${numberOfNights} ${numberOfNights == 1 ? 'night' : 'nights'})',
-                      _bookingCost.roomCost,
-                    ),
-                    if (_bookingCost.eventFee > 0) ...[
-                      const SizedBox(height: 8),
-                      _buildCostRow(
-                        'Event Fee',
-                        _bookingCost.eventFee,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    _buildCostRow(
-                      'Subtotal',
-                      _bookingCost.subtotal,
-                    ),
-                    if (_bookingCost.discount > 0) ...[
-                      const SizedBox(height: 8),
-                      _buildCostRow(
-                        'Discount (${(_bookingCost.discountRate * 100).toStringAsFixed(0)}%)',
-                        -_bookingCost.discount,
-                        isDiscount: true,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    _buildCostRow(
-                      'Tax (10%)',
-                      _bookingCost.tax,
-                    ),
-                    const Divider(height: 24),
-                    _buildCostRow(
-                      'Total',
-                      _bookingCost.total,
-                      isTotal: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Payment Details Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Payment Details',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _cardNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Cardholder Name',
-                        border: OutlineInputBorder(
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.cardDecoration,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
+                        child: Icon(
+                          Icons.hotel,
+                          color: AppTheme.primaryColor,
+                          size: 20,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _cardNumberController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 19,
-                      decoration: InputDecoration(
-                        labelText: 'Card Number',
-                        hintText: '1234 5678 9012 3456',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          widget.room.name,
+                          style: AppTheme.heading3,
                         ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        counterText: '',
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _expiryController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 5,
-                            decoration: InputDecoration(
-                              labelText: 'Expiry (MM/YY)',
-                              hintText: '12/25',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                              counterText: '',
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'[\d/]')),
-                            ],
-                            onChanged: (value) {
-                              // Auto-format MM/YY
-                              if (value.length == 2 && !value.contains('/')) {
-                                _expiryController.value = TextEditingValue(
-                                  text: '$value/',
-                                  selection: TextSelection.collapsed(offset: 3),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _cvvController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 4,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText: 'CVV',
-                              hintText: '123',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                              counterText: '',
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildDetailChip(
+                        icon: Icons.calendar_today,
+                        label: 'Check-in',
+                        value: _dateFormat.format(widget.checkIn),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildDetailChip(
+                        icon: Icons.calendar_today,
+                        label: 'Check-out',
+                        value: _dateFormat.format(widget.checkOut),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _buildDetailChip(
+                        icon: Icons.bed,
+                        label: 'Nights',
+                        value: '$numberOfNights',
+                      ),
+                      const SizedBox(width: 12),
+                      _buildDetailChip(
+                        icon: Icons.people,
+                        label: 'Guests',
+                        value: '${widget.guests}',
+                      ),
+                    ],
+                  ),
+                  if (widget.eventType != EventType.none) ...[
+                    const SizedBox(height: 12),
+                    _buildDetailChip(
+                      icon: Icons.celebration,
+                      label: 'Event Type',
+                      value: Booking.getEventTypeDisplay(widget.eventType),
+                      isHighlighted: true,
                     ),
                   ],
-                ),
+                ],
               ),
             ),
+
+            const SizedBox(height: 20),
+
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.cardDecoration,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.successColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.receipt,
+                          color: AppTheme.successColor,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Cost Breakdown',
+                        style: AppTheme.heading3,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildCostItem(
+                    label: 'Room (${numberOfNights} nights)',
+                    amount: _bookingCost.roomCost,
+                    isBold: false,
+                  ),
+                  if (_bookingCost.eventFee > 0) ...[
+                    _buildCostItem(
+                      label: 'Event Fee',
+                      amount: _bookingCost.eventFee,
+                      isBold: false,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  _buildCostItem(
+                    label: 'Subtotal',
+                    amount: _bookingCost.subtotal,
+                    isBold: true,
+                  ),
+                  if (_bookingCost.discount > 0) ...[
+                    _buildCostItem(
+                      label: 'Discount (${(_bookingCost.discountRate * 100).toStringAsFixed(0)}%)',
+                      amount: -_bookingCost.discount,
+                      isDiscount: true,
+                    ),
+                  ],
+                  _buildCostItem(
+                    label: 'Tax (10%)',
+                    amount: _bookingCost.tax,
+                    isBold: false,
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Amount',
+                          style: AppTheme.bodyLarge.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '₱${_bookingCost.total.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.cardDecoration,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.credit_card,
+                          color: AppTheme.accentColor,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Payment Details',
+                        style: AppTheme.heading3,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _cardNameController,
+                    decoration: AppTheme.textFieldDecoration.copyWith(
+                      labelText: 'Cardholder Name',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _cardNumberController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 19,
+                    decoration: AppTheme.textFieldDecoration.copyWith(
+                      labelText: 'Card Number',
+                      hintText: '1234 5678 9012 3456',
+                      counterText: '',
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _expiryController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 5,
+                          decoration: AppTheme.textFieldDecoration.copyWith(
+                            labelText: 'Expiry (MM/YY)',
+                            hintText: '12/25',
+                            counterText: '',
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[\d/]')),
+                          ],
+                          onChanged: (value) {
+                            if (value.length == 2 && !value.contains('/')) {
+                              _expiryController.value = TextEditingValue(
+                                text: '$value/',
+                                selection: TextSelection.collapsed(offset: 3),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: _cvvController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 4,
+                          obscureText: true,
+                          decoration: AppTheme.textFieldDecoration.copyWith(
+                            labelText: 'CVV',
+                            hintText: '123',
+                            counterText: '',
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 24),
 
-            // Pay Now Button
-            SizedBox(
-              height: 56,
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
               child: ElevatedButton(
                 onPressed: _isProcessing ? null : _processPayment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade600,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                style: AppTheme.gradientButtonStyle.copyWith(
+                  padding: MaterialStateProperty.all<EdgeInsets>(
+                    const EdgeInsets.symmetric(vertical: 18),
                   ),
-                  elevation: 4,
                 ),
                 child: _isProcessing
                     ? const SizedBox(
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: 3,
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : Text(
-                        'Pay \$${_bookingCost.total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Pay ₱${_bookingCost.total.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.lock, size: 20),
+                        ],
                       ),
               ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.borderColor),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.security,
+                    color: AppTheme.successColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your payment is secure and encrypted',
+                      style: AppTheme.bodySmall.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCostRow(String label, double amount, {bool isDiscount = false, bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isTotal ? 18 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isDiscount ? Colors.green.shade700 : Colors.grey.shade800,
-          ),
+  Widget _buildDetailChip({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isHighlighted = false,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isHighlighted ? AppTheme.accentColor.withOpacity(0.1) : AppTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        Text(
-          '${isDiscount ? '-' : ''}\$${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: isTotal ? 20 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isDiscount ? Colors.green.shade700 : Colors.grey.shade800,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isHighlighted ? AppTheme.accentColor : AppTheme.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: AppTheme.caption.copyWith(
+                    color: isHighlighted ? AppTheme.accentColor : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: AppTheme.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isHighlighted ? AppTheme.accentColor : AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildCostItem({
+    required String label,
+    required double amount,
+    bool isBold = false,
+    bool isDiscount = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: isBold
+                ? AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600)
+                : AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
+          ),
+          Text(
+            '${isDiscount ? '-' : ''}₱${amount.toStringAsFixed(2)}',
+            style: (isBold
+                ? AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600)
+                : AppTheme.bodyMedium).copyWith(
+              color: isDiscount ? AppTheme.successColor : AppTheme.textPrimary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -544,14 +664,7 @@ class BookingSuccessPage extends StatelessWidget {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.purple.shade400,
-              Colors.blue.shade600,
-            ],
-          ),
+          gradient: AppTheme.primaryGradient,
         ),
         child: SafeArea(
           child: Padding(
@@ -561,16 +674,23 @@ class BookingSuccessPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.check_circle,
                     size: 60,
-                    color: Colors.green,
+                    color: AppTheme.successColor,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -593,13 +713,33 @@ class BookingSuccessPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Booking ID: $bookingId',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.8),
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Booking ID',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        bookingId,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 48),
                 ElevatedButton(
@@ -608,17 +748,32 @@ class BookingSuccessPage extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: Colors.purple.shade600,
+                    foregroundColor: AppTheme.primaryColor,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    elevation: 0,
                   ),
                   child: const Text(
                     'Back to Home',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    // Navigate to bookings page
+                  },
+                  child: Text(
+                    'View My Bookings',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),

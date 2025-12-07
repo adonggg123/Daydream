@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/room.dart';
 import '../models/booking.dart';
 import '../screens/booking_confirmation_page.dart';
+import '../screens/theme_constants.dart';
 
 class EnhancedBookingForm extends StatefulWidget {
   final Room room;
@@ -188,10 +189,10 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
     final numberOfNights = _checkOut.difference(_checkIn).inDays;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(widget.isEventBooking ? 'Event Reservation' : 'Complete Booking'),
-        backgroundColor: Colors.purple.shade600,
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -288,7 +289,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.calendar_today, color: Colors.purple.shade600, size: 24),
+                            Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 24),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -334,7 +335,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.calendar_today, color: Colors.purple.shade600, size: 24),
+                            Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 24),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -369,7 +370,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                     // Number of Guests
                     Row(
                       children: [
-                        Icon(Icons.people, color: Colors.purple.shade600, size: 24),
+                        Icon(Icons.people, color: AppTheme.primaryColor, size: 24),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -406,7 +407,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                               IconButton(
                                 icon: Icon(
                                   Icons.remove,
-                                  color: _guests > 1 ? Colors.purple.shade600 : Colors.grey.shade400,
+                                  color: _guests > 1 ? AppTheme.primaryColor : Colors.grey.shade400,
                                 ),
                                 onPressed: _guests > 1 ? _decreaseGuests : null,
                               ),
@@ -425,7 +426,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                                 icon: Icon(
                                   Icons.add,
                                   color: _guests < widget.room.capacity
-                                      ? Colors.purple.shade600
+                                      ? AppTheme.primaryColor
                                       : Colors.grey.shade400,
                                 ),
                                 onPressed: _guests < widget.room.capacity ? _increaseGuests : null,
@@ -446,13 +447,13 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.purple.shade50,
-                    Colors.blue.shade50,
+                    AppTheme.primaryColor.withOpacity(0.1),
+                    AppTheme.secondaryColor.withOpacity(0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.purple.shade200,
+                  color: AppTheme.primaryColor.withOpacity(0.3),
                   width: 2,
                 ),
               ),
@@ -472,7 +473,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.purple.shade600,
+                              gradient: AppTheme.primaryGradient,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
@@ -516,7 +517,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.purple.shade600),
+                            Icon(Icons.info_outline, size: 16, color: AppTheme.primaryColor),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -556,10 +557,10 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                                 }
                               });
                             },
-                            selectedColor: Colors.purple.shade100,
-                            checkmarkColor: Colors.purple.shade600,
+                            selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                            checkmarkColor: AppTheme.primaryColor,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.purple.shade600 : Colors.grey.shade700,
+                              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade700,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
                           );
@@ -603,7 +604,7 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.note_add, color: Colors.purple.shade600, size: 24),
+                        Icon(Icons.note_add, color: AppTheme.primaryColor, size: 24),
                         const SizedBox(width: 8),
                         Text(
                           'Special Requests',
@@ -636,17 +637,29 @@ class _EnhancedBookingFormState extends State<EnhancedBookingForm> {
             const SizedBox(height: 24),
 
             // Continue Button
-            SizedBox(
+            Container(
               height: 56,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
               child: ElevatedButton(
                 onPressed: _proceedToPayment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade600,
+                  backgroundColor: Colors.transparent,
                   foregroundColor: Colors.white,
+                  shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 4,
+                  elevation: 0,
                 ),
                 child: const Text(
                   'Continue to Payment',

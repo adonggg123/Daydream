@@ -18,6 +18,7 @@ import '../services/guest_request_service.dart';
 import '../services/event_booking_service.dart';
 import '../models/event_booking.dart';
 import '../models/booking.dart';
+import 'login_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -65,10 +66,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Future<void> _loadCurrentUser() async {
     try {
-      final user = await _userService.getCurrentUserProfile();
-      setState(() {
-        _currentUser = user;
-      });
+    final user = await _userService.getCurrentUserProfile();
+    setState(() {
+      _currentUser = user;
+    });
     } catch (e) {
       debugPrint('Error loading current user: $e');
     }
@@ -161,7 +162,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 Expanded(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: _buildContent(),
+                  child: _buildContent(),
                   ),
                 ),
               ],
@@ -177,7 +178,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       Expanded(
                         child: FadeTransition(
                           opacity: _fadeAnimation,
-                          child: _buildContent(),
+                        child: _buildContent(),
                         ),
                       ),
                     ],
@@ -229,12 +230,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
             ),
             child: Column(
-              children: [
-                Container(
+                  children: [
+                    Container(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
@@ -261,14 +262,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Admin Panel',
-                  style: TextStyle(
+                        'Admin Panel',
+                        style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Colors.grey.shade900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                 Text(
                   'Dashboard v2.0',
                   style: TextStyle(
@@ -292,59 +293,59 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                  ),
                 ),
-                _buildNavItem(
+                ),
+                  _buildNavItem(
                   icon: Icons.people_alt_rounded,
-                  label: 'Users',
-                  index: 1,
+                    label: 'Users',
+                    index: 1,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF38B2AC), Color(0xFF319795)],
                   ),
                 ),
-                _buildNavItem(
+                  _buildNavItem(
                   icon: Icons.king_bed_rounded,
-                  label: 'Rooms',
-                  index: 2,
+                    label: 'Rooms',
+                    index: 2,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFED8936), Color(0xFFDD6B20)],
                   ),
                 ),
-                _buildNavItem(
+                  _buildNavItem(
                   icon: Icons.calendar_today_rounded,
-                  label: 'Room Bookings',
-                  index: 3,
+                    label: 'Room Bookings',
+                    index: 3,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF9F7AEA), Color(0xFF805AD5)],
                   ),
                 ),
-                _buildNavItem(
-                  icon: Icons.event_rounded,
-                  label: 'Event Bookings',
+                  _buildNavItem(
+                    icon: Icons.event_rounded,
+                    label: 'Event Bookings',
                   index: 4,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF687B3), Color(0xFFED64A6)],
                   ),
                 ),
-                _buildNavItem(
-                  icon: Icons.support_agent_rounded,
-                  label: 'Guest Requests',
+                  _buildNavItem(
+                    icon: Icons.support_agent_rounded,
+                    label: 'Guest Requests',
                   index: 5,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF48BB78), Color(0xFF38A169)],
                   ),
                 ),
-                _buildNavItem(
+                  _buildNavItem(
                   icon: Icons.history_toggle_off_rounded,
-                  label: 'Audit Trail',
+                    label: 'Audit Trail',
                   index: 6,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF718096), Color(0xFF4A5568)],
                   ),
                 ),
-                _buildNavItem(
-                  icon: Icons.settings_rounded,
-                  label: 'System',
+                  _buildNavItem(
+                    icon: Icons.settings_rounded,
+                    label: 'System',
                   index: 7,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF4FD1C5), Color(0xFF38B2AC)],
@@ -531,10 +532,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         child: Container(
           constraints: const BoxConstraints(minHeight: 65, maxHeight: 70),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Row(
+      child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+        children: [
               ...visibleItems.map((item) => _buildBottomNavItem(item)),
               if (moreItems.isNotEmpty)
                 _buildMoreButton(moreItems),
@@ -557,7 +558,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _animationController.forward();
           });
         },
-        child: Container(
+                      child: Container(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -570,7 +571,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
               const SizedBox(height: 1),
               Flexible(
-                child: Text(
+                        child: Text(
                   item.label,
                   style: TextStyle(
                     fontSize: 9,
@@ -579,10 +580,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
+                          textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
           ),
         ),
       ),
@@ -603,7 +604,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             children: [
               Stack(
                 clipBehavior: Clip.none,
-                children: [
+                      children: [
                   Icon(
                     Icons.more_horiz_rounded,
                     color: hasSelectedInMore ? const Color(0xFF5A67D8) : Colors.grey.shade600,
@@ -621,9 +622,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                           shape: BoxShape.circle,
                         ),
                       ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
               const SizedBox(height: 1),
               Flexible(
                 child: Text(
@@ -676,7 +677,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
+              color: Color(0xFF1F2937),
                       ),
                     ),
                     const Spacer(),
@@ -690,21 +691,21 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ...moreItems.map((item) {
                 final isSelected = _selectedIndex == item.index;
                 return ListTile(
-                  leading: Container(
+                      leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFF5A67D8).withOpacity(0.1)
                           : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
                       item.icon,
                       color: isSelected ? const Color(0xFF5A67D8) : Colors.grey.shade600,
-                      size: 24,
-                    ),
-                  ),
-                  title: Text(
+                          size: 24,
+                        ),
+                      ),
+                      title: Text(
                     item.label,
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -752,7 +753,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         horizontal: isMobile ? 20 : 32,
         vertical: isMobile ? 16 : 24,
       ),
-      decoration: BoxDecoration(
+                            decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
           bottom: BorderSide(color: Colors.grey.shade100, width: 1),
@@ -762,16 +763,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             color: Colors.black.withOpacity(0.02),
             blurRadius: 15,
             offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+                          ),
+                        ],
+                      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+                              children: [
           Row(
             children: [
               if (isMobile)
-                IconButton(
+                                IconButton(
                   icon: Container(
                     width: 56,
                     height: 56,
@@ -869,7 +870,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
                     begin: Alignment.topLeft,
@@ -889,12 +890,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       _currentUser?.displayName?.isNotEmpty == true
                           ? _currentUser!.displayName![0].toUpperCase()
                           : 'A',
-                      style: const TextStyle(
+                        style: const TextStyle(
                         color: Color(0xFF5A67D8),
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
                   ),
                 ),
               ),
@@ -903,11 +904,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 SizedBox(
                   width: 150,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                         _currentUser?.displayName ?? 'Admin User',
-                        style: TextStyle(
+                            style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade800,
@@ -916,17 +917,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       ),
                       Text(
                         _currentUser?.email ?? 'admin@example.com',
-                        style: TextStyle(
-                          fontSize: 12,
+                                style: TextStyle(
+                                  fontSize: 12,
                           color: Colors.grey.shade500,
-                        ),
+                                ),
                         overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+                                                ),
+                                            ],
+                                          ),
           if (!isMobile) const SizedBox(height: 8),
           if (!isMobile)
             Text(
@@ -937,9 +938,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
             ),
         ],
-      ),
-    );
-  }
+                                          ),
+                                        );
+                                      }
 
   Widget _buildContent() {
     switch (_selectedIndex) {
@@ -959,15 +960,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 768;
-        return SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               Padding(
                 padding: EdgeInsets.all(isMobile ? 20 : 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                      children: [
                     _buildStatsGrid(isMobile: isMobile),
                     SizedBox(height: isMobile ? 24 : 32),
                     if (isMobile)
@@ -998,13 +999,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                           Expanded(
                             child: _buildQuickActions(isMobile: false),
                           ),
-                        ],
-                      ),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-            ],
           ),
+        ],
+      ),
         );
       },
     );
@@ -1045,35 +1046,35 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
         final stats = [
           _StatItem(
-            title: 'Total Bookings',
-            value: totalBookings.toString(),
-            icon: Icons.book_rounded,
+                      title: 'Total Bookings',
+                      value: totalBookings.toString(),
+                      icon: Icons.book_rounded,
             gradient: const LinearGradient(
               colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-            ),
-          ),
+                    ),
+                  ),
           _StatItem(
-            title: 'Confirmed',
-            value: confirmedBookings.toString(),
-            icon: Icons.check_circle_rounded,
+                      title: 'Confirmed',
+                      value: confirmedBookings.toString(),
+                      icon: Icons.check_circle_rounded,
             gradient: const LinearGradient(
               colors: [Color(0xFF38B2AC), Color(0xFF319795)],
             ),
           ),
           _StatItem(
-            title: 'Pending',
-            value: pendingBookings.toString(),
-            icon: Icons.pending_rounded,
+                      title: 'Pending',
+                      value: pendingBookings.toString(),
+                      icon: Icons.pending_rounded,
             gradient: const LinearGradient(
               colors: [Color(0xFFED8936), Color(0xFFDD6B20)],
-            ),
-          ),
+                    ),
+                  ),
           _StatItem(
-            title: 'Total Revenue',
+                      title: 'Total Revenue',
             value: '₱${totalRevenue.toStringAsFixed(0)}',
-            icon: Icons.attach_money_rounded,
+                      icon: Icons.attach_money_rounded,
             gradient: const LinearGradient(
               colors: [Color(0xFF9F7AEA), Color(0xFF805AD5)],
             ),
@@ -1082,7 +1083,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
         if (isMobile) {
           return Column(
-            children: [
+          children: [
               SizedBox(
                 height: 160,
                 child: Row(
@@ -1102,9 +1103,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     const SizedBox(width: 12),
                     Expanded(child: _buildStatCard(stats[3], isMobile: true)),
                   ],
-                ),
               ),
-            ],
+            ),
+          ],
           );
         }
 
@@ -1152,11 +1153,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(item.icon, color: Colors.white, size: 22),
+              child: item.icon == Icons.attach_money_rounded
+                  ? Text(
+                      '₱',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : Icon(item.icon, color: Colors.white, size: 22),
             ),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
@@ -1171,17 +1181,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                  Text(
                   item.title,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    height: 1.0,
+                      fontWeight: FontWeight.w500,
+                      height: 1.0,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
             ),
           ],
         ),
@@ -1215,7 +1225,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
-                    ),
+                  ),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 24),
@@ -1223,11 +1233,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 const SizedBox(width: 16),
                 const Expanded(
                   child: Text(
-                    'Recent Bookings',
-                    style: TextStyle(
+                  'Recent Bookings',
+                  style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black87,
+                    color: Colors.black87,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -1344,17 +1354,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   Expanded(
                                     child: Text(
                                       booking['guestName'] ?? 'Guest',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 13,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 13,
                                       ),
                                       overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
+                            ],
+                        ),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -1387,9 +1397,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
+                                      ],
+                                    ),
+                                  );
                 },
               );
             },
@@ -1426,7 +1436,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF9F7AEA), Color(0xFF805AD5)],
-                    ),
+                  ),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 24),
@@ -1435,10 +1445,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 const Expanded(
                   child: Text(
                     'Recent Notifications',
-                    style: TextStyle(
+                  style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black87,
+                    color: Colors.black87,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -1460,15 +1470,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               if (notifications.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.all(48),
-                  child: Column(
-                    children: [
+                    child: Column(
+                      children: [
                       Icon(Icons.notifications_off_rounded, size: 64, color: Colors.grey.shade300),
                       const SizedBox(height: 16),
-                      Text(
+                        Text(
                         'All caught up!',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
                   ),
                 );
               }
@@ -1582,7 +1592,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFED8936), Color(0xFFDD6B20)],
-                    ),
+                  ),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 24),
@@ -1590,11 +1600,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 const SizedBox(width: 16),
                 const Expanded(
                   child: Text(
-                    'Quick Actions',
-                    style: TextStyle(
+                  'Quick Actions',
+                  style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black87,
+                    color: Colors.black87,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -1648,19 +1658,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: onTap,
+      onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.grey.shade100),
-          ),
-          child: Row(
-            children: [
-              Container(
+        ),
+        child: Row(
+          children: [
+            Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
+              decoration: BoxDecoration(
                   gradient: gradient,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
@@ -1674,33 +1684,33 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 child: Icon(icon, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                         color: Colors.black87,
-                      ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
+                      overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
                         fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                      overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
+            ),
               Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey.shade400),
-            ],
+          ],
           ),
         ),
       ),
@@ -1713,27 +1723,27 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         final isMobile = constraints.maxWidth < 768;
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 20 : 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
                 'Room Bookings',
-                style: TextStyle(
+            style: TextStyle(
                   fontSize: isMobile ? 24 : 28,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey.shade900,
+              color: Colors.grey.shade900,
                   letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
                 'Manage and review all room reservations',
-                style: TextStyle(
+            style: TextStyle(
                   fontSize: isMobile ? 14 : 15,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 24),
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1743,7 +1753,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
-                  children: [
+            children: [
                     Icon(Icons.filter_list_rounded, color: Colors.grey.shade600, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1769,26 +1779,26 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             color: const Color(0xFF5A67D8).withOpacity(0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
+              ),
+            ],
+          ),
                       child: const Row(
-                        children: [
+                      children: [
                           Icon(Icons.download_rounded, color: Colors.white, size: 16),
                           SizedBox(width: 8),
-                          Text(
+                        Text(
                             'Export',
-                            style: TextStyle(
+                          style: TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+          ),
+        ],
+      ),
               ),
               const SizedBox(height: 24),
               StreamBuilder<QuerySnapshot>(
@@ -1812,23 +1822,23 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       );
                       final isPending = status == BookingStatus.pending;
                       
-                      return Container(
+    return Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(isMobile ? 16 : 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: Colors.grey.shade100),
-                          boxShadow: [
-                            BoxShadow(
+        boxShadow: [
+          BoxShadow(
                               color: Colors.black.withOpacity(0.02),
                               blurRadius: 15,
                               offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
+          ),
+        ],
+      ),
                         child: Column(
-                          children: [
+        children: [
                             Row(
                               children: [
                                 Container(
@@ -1842,7 +1852,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                             : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
-                                  child: Icon(
+                    child: Icon(
                                     status == BookingStatus.confirmed
                                         ? Icons.check_circle
                                         : status == BookingStatus.rejected
@@ -1853,10 +1863,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   ),
                                 ),
                                 SizedBox(width: isMobile ? 12 : 20),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                                       Text(
                                         data['roomName'] ?? 'Unknown',
                                         style: TextStyle(
@@ -1867,14 +1877,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 6),
-                                      Row(
-                                        children: [
+                Row(
+                  children: [
                                           Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
                                           const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
+                    Expanded(
+                      child: Text(
                                               'Guest: ${data['userId'] ?? 'N/A'}',
-                                              style: TextStyle(
+                        style: TextStyle(
                                                 color: Colors.grey.shade600,
                                                 fontSize: isMobile ? 13 : 14,
                                               ),
@@ -1889,23 +1899,23 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: Text(
+                      child: Text(
                                               '${data['checkIn'] ?? ''} to ${data['checkOut'] ?? ''}',
-                                              style: TextStyle(
+                        style: TextStyle(
                                                 color: Colors.grey.shade600,
                                                 fontSize: isMobile ? 13 : 14,
-                                              ),
+                        ),
                                               overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                      ),
+                    ),
+                  ],
+                ),
                                     ],
                                   ),
                                 ),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
+                  children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
@@ -1918,7 +1928,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                       ),
                                       child: Text(
                                         status.name.toUpperCase(),
-                                        style: TextStyle(
+                      style: TextStyle(
                                           color: status == BookingStatus.confirmed
                                               ? const Color(0xFF38B2AC)
                                               : status == BookingStatus.rejected
@@ -1946,13 +1956,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   color: const Color(0xFF48BB78).withOpacity(0.3),
                                                   blurRadius: 10,
                                                   offset: const Offset(0, 4),
-                                                ),
-                                              ],
-                                            ),
+                ),
+              ],
+            ),
                                             child: IconButton(
                                               icon: Icon(Icons.check, color: Colors.white, size: isMobile ? 18 : 20),
                                               tooltip: 'Accept',
-                                              onPressed: () async {
+                onPressed: () async {
                                                 if (_currentUser == null) return;
                                                 try {
                                                   await _bookingService.acceptBooking(
@@ -1960,15 +1970,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     callerUserId: _currentUser!.id,
                                                     checkConflicts: true,
                                                   );
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
                                                         content: const Text('Booking accepted'),
-                                                        backgroundColor: Colors.green,
+                        backgroundColor: Colors.green,
                                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                      ),
-                                                    );
-                                                  }
+                      ),
+                    );
+                  }
                                                 } catch (e) {
                                                   if (mounted) {
                                                     showDialog(
@@ -2001,10 +2011,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                                   }
                                                                 } catch (e2) {
                                                                   if (mounted) {
-                                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                                      SnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
                                                                         content: Text('Error: ${e2.toString()}'),
-                                                                        backgroundColor: Colors.red,
+                        backgroundColor: Colors.red,
                                                                       ),
                                                                     );
                                                                   }
@@ -2032,16 +2042,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   color: const Color(0xFFF56565).withOpacity(0.3),
                                                   blurRadius: 10,
                                                   offset: const Offset(0, 4),
-                                                ),
-                                              ],
-                                            ),
+          ),
+        ],
+      ),
                                             child: IconButton(
                                               icon: Icon(Icons.close, color: Colors.white, size: isMobile ? 18 : 20),
                                               tooltip: 'Reject',
                                               onPressed: () async {
                                                 if (_currentUser == null) return;
                                                 final reason = await showDialog<String>(
-                                                  context: context,
+      context: context,
                                                   builder: (context) {
                                                     final controller = TextEditingController();
                                                     return AlertDialog(
@@ -2055,12 +2065,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                         ),
                                                         maxLines: 3,
                                                       ),
-                                                      actions: [
-                                                        TextButton(
+        actions: [
+          TextButton(
                                                           onPressed: () => Navigator.pop(context),
-                                                          child: const Text('Cancel'),
-                                                        ),
-                                                        ElevatedButton(
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
                                                           onPressed: () => Navigator.pop(context, controller.text),
                                                           style: ElevatedButton.styleFrom(
                                                             backgroundColor: const Color(0xFFF56565),
@@ -2077,25 +2087,25 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     callerUserId: _currentUser!.id,
                                                     reason: reason,
                                                   );
-                                                  if (mounted) {
+                if (mounted) {
                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
+                    const SnackBar(
                                                         content: Text('Booking rejected'),
                                                         backgroundColor: Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                } catch (e) {
-                                                  if (mounted) {
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(
+                    SnackBar(
                                                         content: Text('Error: ${e.toString()}'),
-                                                        backgroundColor: Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                }
-                                              },
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
                                             ),
                                           ),
                                         ],
@@ -2103,9 +2113,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   ],
                                 ),
                               ],
-                            ),
-                          ],
-                        ),
+          ),
+        ],
+      ),
                       );
                     },
                   );
@@ -2124,26 +2134,26 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         final isMobile = constraints.maxWidth < 768;
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 20 : 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                           'Room Management',
-                          style: TextStyle(
+                        style: TextStyle(
                             fontSize: isMobile ? 24 : 28,
                             fontWeight: FontWeight.w700,
                             color: Colors.grey.shade900,
                             letterSpacing: -0.5,
-                          ),
                         ),
-                        const SizedBox(height: 8),
+                      ),
+                      const SizedBox(height: 8),
                         Text(
                           'Manage hotel rooms and availability',
                           style: TextStyle(
@@ -2155,8 +2165,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ),
                   ),
                   if (!isMobile)
-                    Container(
-                      decoration: BoxDecoration(
+                        Container(
+                          decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
                         ),
@@ -2199,7 +2209,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               if (isMobile) ...[
                 const SizedBox(height: 16),
                 Container(
-                  width: double.infinity,
+                                    width: double.infinity,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
@@ -2295,7 +2305,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       child: Padding(
                         padding: const EdgeInsets.all(40),
                         child: Column(
-                          children: [
+                        children: [
                             Icon(Icons.room_rounded, size: 64, color: Colors.grey.shade300),
                             const SizedBox(height: 16),
                             Text(
@@ -2453,7 +2463,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ),
               ),
               SizedBox(width: isMobile ? 12 : 16),
-              Expanded(
+                          Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2489,18 +2499,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     backgroundColor: Colors.green,
                                   ),
                                 );
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
                                     content: Text('Error: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
@@ -2536,13 +2546,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   color: room.isAvailable
                                       ? const Color(0xFF38B2AC)
                                       : const Color(0xFF718096),
-                                ),
-                              ],
-                            ),
+                          ),
+                        ],
+                      ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
+                  ),
                     const SizedBox(height: 4),
                     Text(
                       room.description,
@@ -2559,9 +2569,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             ],
           ),
           SizedBox(height: isMobile ? 12 : 16),
-          Row(
-            children: [
-              Icon(Icons.attach_money_rounded, size: 16, color: Colors.grey.shade600),
+                Row(
+                  children: [
+              Text(
+                '₱',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                ),
+              ),
               const SizedBox(width: 4),
               Text(
                 '₱${room.price.toStringAsFixed(2)}/night',
@@ -2603,27 +2620,27 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                      ),
+                    ),
+                  ],
+                ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
+                        Container(
+                          decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => _showDeleteRoomDialog(room),
-                      borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(10),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Row(
@@ -2649,9 +2666,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
           if (isMobile) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
+                      Row(
+                        children: [
+                          Expanded(
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -2665,7 +2682,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         onTap: () {
                           try {
                             _showEditRoomDialog(room);
-                          } catch (e) {
+                                } catch (e) {
                             debugPrint('Error showing edit dialog: $e');
                           }
                         },
@@ -2683,10 +2700,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   color: Colors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
+                        ],
+                      ),
                         ),
                       ),
                     ),
@@ -2710,7 +2727,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                  children: [
                               const Icon(Icons.delete_rounded, color: Colors.white, size: 16),
                               const SizedBox(width: 6),
                               const Text(
@@ -2720,10 +2737,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
+                ),
+              ],
+            ),
+          ),
                       ),
                     ),
                   ),
@@ -2804,7 +2821,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       EventBooking booking;
                       try {
                         booking = EventBooking.fromSnapshot(doc);
-                      } catch (e) {
+                  } catch (e) {
                         debugPrint('Error parsing event booking ${doc.id}: $e');
                         // Return a placeholder card for invalid bookings
                         return Container(
@@ -2825,10 +2842,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 ),
                               ),
                             ],
-                          ),
-                        );
-                      }
-                      
+      ),
+    );
+  }
+
                       final eventDate = booking.eventDate;
                       final peopleCount = booking.peopleCount;
                       final userEmail = booking.userEmail;
@@ -2852,15 +2869,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                               offset: const Offset(0, 4),
                             ),
                           ],
-                        ),
-                        child: Column(
-                          children: [
+              ),
+              child: Column(
+                children: [
                             Row(
                               children: [
-                                Container(
+                  Container(
                                   width: isMobile ? 48 : 60,
                                   height: isMobile ? 48 : 60,
-                                  decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                                     gradient: status == EventBookingStatus.confirmed
                                         ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
                                         : status == EventBookingStatus.rejected
@@ -2882,10 +2899,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
+                      children: [
                                       Text(
                                         Booking.getEventTypeDisplay(eventType),
-                                        style: TextStyle(
+                            style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: isMobile ? 15 : 17,
                                           color: const Color(0xFF1F2937),
@@ -2909,9 +2926,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   ),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
-                                              ),
-                                            ],
-                                          ),
+                        ),
+                      ],
+                    ),
                                           const SizedBox(height: 4),
                                           Wrap(
                                             spacing: 8,
@@ -2932,13 +2949,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 ],
                                               ),
                                               Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                                                   Icon(Icons.people_outline, size: 14, color: Colors.grey.shade500),
                                                   const SizedBox(width: 6),
-                                                  Text(
+                      Text(
                                                     '$peopleCount people',
-                                                    style: TextStyle(
+                        style: TextStyle(
                                                       color: Colors.grey.shade600,
                                                       fontSize: isMobile ? 13 : 14,
                                                     ),
@@ -2955,9 +2972,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Container(
+                        Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
+                          decoration: BoxDecoration(
                                         color: status == EventBookingStatus.confirmed
                                             ? const Color(0xFF38B2AC).withOpacity(0.1)
                                             : status == EventBookingStatus.rejected
@@ -2976,14 +2993,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           fontWeight: FontWeight.w700,
                                           fontSize: 11,
                                           letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
+                                  ),
+                          ),
+                        ),
                                     if (isMobile) const SizedBox(height: 12),
                                     if (isPending)
-                                      Row(
+                      Row(
                                         mainAxisSize: MainAxisSize.min,
-                                        children: [
+                        children: [
                                           Container(
                                             decoration: BoxDecoration(
                                               gradient: const LinearGradient(
@@ -3001,7 +3018,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                             child: IconButton(
                                               icon: Icon(Icons.check, color: Colors.white, size: isMobile ? 18 : 20),
                                               tooltip: 'Accept',
-                                              onPressed: () async {
+                              onPressed: () async {
                                                 if (_currentUser == null) return;
                                                 try {
                                                   await _eventBookingService.acceptEventBooking(
@@ -3016,8 +3033,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                         backgroundColor: Colors.green,
                                                       ),
                                                     );
-                                                  }
-                                                } catch (e) {
+                                  }
+                                } catch (e) {
                                                   if (mounted) {
                                                     showDialog(
                                                       context: context,
@@ -3048,16 +3065,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                                     );
                                                                   }
                                                                 } catch (e2) {
-                                                                  if (mounted) {
-                                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                                      SnackBar(
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
                                                                         content: Text('Error: ${e2.toString()}'),
-                                                                        backgroundColor: Colors.red,
-                                                                      ),
-                                                                    );
-                                                                  }
-                                                                }
-                                                              },
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                                                               child: const Text('Accept Anyway'),
                                                             ),
                                                         ],
@@ -3066,9 +3083,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   }
                                                 }
                                               },
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                                           Container(
                                             decoration: BoxDecoration(
                                               gradient: const LinearGradient(
@@ -3086,7 +3103,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                             child: IconButton(
                                               icon: Icon(Icons.close, color: Colors.white, size: isMobile ? 18 : 20),
                                               tooltip: 'Reject',
-                                              onPressed: () async {
+                              onPressed: () async {
                                                 if (_currentUser == null) return;
                                                 final reason = await showDialog<String>(
                                                   context: context,
@@ -3132,28 +3149,28 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                         backgroundColor: Colors.red,
                                                       ),
                                                     );
-                                                  }
-                                                } catch (e) {
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
                                                         content: Text('Error: ${e.toString()}'),
-                                                        backgroundColor: Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                }
-                                              },
-                                            ),
-                                          ),
-                                        ],
+                                        backgroundColor: Colors.red,
                                       ),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                                   ],
                                 ),
                               ],
-                            ),
-                          ],
                         ),
+                    ],
+                  ),
                       );
                     },
                   );
@@ -3207,7 +3224,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         child: Column(
                           children: [
                             Icon(Icons.support_agent_rounded, size: 64, color: Colors.grey.shade300),
-                            const SizedBox(height: 16),
+                const SizedBox(height: 16),
                             Text(
                               'No guest requests',
                               style: TextStyle(color: Colors.grey.shade600),
@@ -3241,7 +3258,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                           ],
                         ),
                         child: Row(
-                          children: [
+                  children: [
                             Container(
                               width: isMobile ? 48 : 60,
                               height: isMobile ? 48 : 60,
@@ -3254,7 +3271,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                               child: const Icon(Icons.support_agent_rounded, color: Colors.white, size: 28),
                             ),
                             SizedBox(width: isMobile ? 12 : 20),
-                            Expanded(
+                    Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -3276,14 +3293,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                    ),
+                  ],
+                ),
                             ),
                             if (RoleBasedAccessControl.userHasPermission(_currentUser!, Permission.manageGuestRequests))
                               Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: [
+                  children: [
                                   Container(
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
@@ -3295,9 +3312,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           color: const Color(0xFF48BB78).withOpacity(0.3),
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
+                ),
+                        ],
+                      ),
                                     child: IconButton(
                                       icon: Icon(Icons.check, color: Colors.white, size: isMobile ? 18 : 20),
                                       onPressed: () async {
@@ -3316,8 +3333,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Container(
-                                    decoration: BoxDecoration(
+                  Container(
+                    decoration: BoxDecoration(
                                       gradient: const LinearGradient(
                                         colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
                                       ),
@@ -3332,7 +3349,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     ),
                                     child: IconButton(
                                       icon: Icon(Icons.person_add, color: Colors.white, size: isMobile ? 18 : 20),
-                                      onPressed: () async {
+                          onPressed: () async {
                                         await _guestRequestService.updateGuestRequest(
                                           requestId: r['id'],
                                           callerUserId: _currentUser!.id,
@@ -3340,7 +3357,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           status: 'assigned',
                                         );
                                         if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
+                                  const SnackBar(
                                             content: Text('Assigned to you'),
                                             backgroundColor: Colors.blue,
                                           ),
@@ -3349,9 +3366,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     ),
                                   ),
                                 ],
-                              ),
-                          ],
-                        ),
+                  ),
+                ],
+              ),
                       );
                     },
                   );
@@ -3370,9 +3387,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         final isMobile = constraints.maxWidth < 768;
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 20 : 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               Text(
                 'User Management',
                 style: TextStyle(
@@ -3391,59 +3408,59 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 24),
-              Container(
+          Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
                   color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
+            ),
+            child: Row(
+              children: [
                     Icon(Icons.people_alt_rounded, color: Colors.grey.shade600),
-                    const SizedBox(width: 12),
-                    StreamBuilder<List<AppUser>>(
-                      stream: _userService.getAllUsers(),
-                      builder: (context, snapshot) {
-                        final count = snapshot.hasData ? snapshot.data!.length : 0;
-                        return Text(
-                          'Showing $count users',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
+                const SizedBox(width: 12),
+                StreamBuilder<List<AppUser>>(
+                  stream: _userService.getAllUsers(),
+                  builder: (context, snapshot) {
+                    final count = snapshot.hasData ? snapshot.data!.length : 0;
+                    return Text(
+                      'Showing $count users',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
                             fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                      ),
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
               StreamBuilder<List<AppUser>>(
-                stream: _userService.getAllUsers(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
+              stream: _userService.getAllUsers(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator(color: Colors.grey));
-                  }
+                }
 
-                  final users = snapshot.data!;
+                final users = snapshot.data!;
 
-                  return ListView.separated(
+                return ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: users.length,
+                  itemCount: users.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final user = users[index];
+                  itemBuilder: (context, index) {
+                    final user = users[index];
                       return _buildUserCard(user, isMobile: isMobile);
-                    },
-                  );
-                },
-              ),
-            ],
+                  },
+                );
+              },
           ),
+        ],
+      ),
         );
       },
     );
@@ -3462,170 +3479,170 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        onTap: () => _showUserDetails(user),
+      onTap: () => _showUserDetails(user),
         borderRadius: BorderRadius.circular(20),
-        child: Container(
+      child: Container(
           padding: EdgeInsets.all(isMobile ? 16 : 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        decoration: BoxDecoration(
+          color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.grey.shade100),
-            boxShadow: [
-              BoxShadow(
+          boxShadow: [
+            BoxShadow(
                 color: Colors.black.withOpacity(0.02),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
                 width: isMobile ? 48 : 60,
                 height: isMobile ? 48 : 60,
-                decoration: BoxDecoration(
+            decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [roleColor.withOpacity(0.2), roleColor.withOpacity(0.3)],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                ),
-                child: user.photoUrl != null
-                    ? ClipRRect(
+            ),
+            child: user.photoUrl != null
+                ? ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          user.photoUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                user.email[0].toUpperCase(),
-                                style: TextStyle(
-                                  color: roleColor,
+                    child: Image.network(
+                      user.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Text(
+                            user.email[0].toUpperCase(),
+                            style: TextStyle(
+                              color: roleColor,
                                   fontWeight: FontWeight.w700,
                                   fontSize: isMobile ? 20 : 24,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          user.email[0].toUpperCase(),
-                          style: TextStyle(
-                            color: roleColor,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      user.email[0].toUpperCase(),
+                      style: TextStyle(
+                        color: roleColor,
                             fontWeight: FontWeight.w700,
                             fontSize: isMobile ? 20 : 24,
-                          ),
-                        ),
                       ),
-              ),
+                    ),
+                  ),
+          ),
               SizedBox(width: isMobile ? 12 : 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            user.displayName ?? user.email.split('@')[0],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          user.displayName ?? user.email.split('@')[0],
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: isMobile ? 15 : 17,
                               color: const Color(0xFF1F2937),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        PopupMenuButton(
+                      ),
+                      PopupMenuButton(
                           icon: Icon(Icons.more_vert_rounded, size: isMobile ? 20 : 22, color: Colors.grey.shade600),
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              child: const Text('Change Role'),
-                              onTap: () => Future.delayed(
-                                const Duration(milliseconds: 100),
-                                () => _showRoleChangeDialog(user),
-                              ),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            child: const Text('Change Role'),
+                            onTap: () => Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () => _showRoleChangeDialog(user),
                             ),
-                            PopupMenuItem(
-                              child: Text(user.isActive ? 'Deactivate' : 'Activate'),
-                              onTap: () => _toggleUserActive(user),
-                            ),
-                          ],
+                          ),
+                          PopupMenuItem(
+                            child: Text(user.isActive ? 'Deactivate' : 'Activate'),
+                            onTap: () => _toggleUserActive(user),
+                          ),
+                        ],
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                     SizedBox(height: isMobile ? 6 : 8),
-                    Row(
-                      children: [
+                  Row(
+                    children: [
                         Icon(Icons.email_outlined, size: 14, color: Colors.grey.shade500),
                         SizedBox(width: isMobile ? 4 : 6),
-                        Expanded(
-                          child: Text(
-                            user.email,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
+                      Expanded(
+                        child: Text(
+                          user.email,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
                               fontSize: isMobile ? 13 : 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                     SizedBox(height: isMobile ? 6 : 8),
-                    Row(
-                      children: [
-                        Container(
+                  Row(
+                    children: [
+                      Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: roleColor.withOpacity(0.1),
+                        decoration: BoxDecoration(
+                          color: roleColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            user.role.name.toUpperCase(),
-                            style: TextStyle(
-                              color: roleColor,
+                        ),
+                        child: Text(
+                          user.role.name.toUpperCase(),
+                          style: TextStyle(
+                            color: roleColor,
                               fontSize: isMobile ? 11 : 12,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
-                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                             color: (user.isActive ? const Color(0xFF38B2AC) : const Color(0xFFF56565)).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            user.isActive ? 'ACTIVE' : 'INACTIVE',
-                            style: TextStyle(
+                        ),
+                        child: Text(
+                          user.isActive ? 'ACTIVE' : 'INACTIVE',
+                          style: TextStyle(
                               color: user.isActive ? const Color(0xFF38B2AC) : const Color(0xFFF56565),
                               fontSize: isMobile ? 11 : 12,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
-                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    SizedBox(height: isMobile ? 4 : 6),
-                    Text(
-                      'Joined ${_formatDateTime(user.createdAt)}',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: isMobile ? 11 : 12,
                       ),
+                    ],
+                  ),
+                    SizedBox(height: isMobile ? 4 : 6),
+                  Text(
+                    'Joined ${_formatDateTime(user.createdAt)}',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                        fontSize: isMobile ? 11 : 12,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ],
           ),
         ),
       ),
@@ -3638,9 +3655,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         final isMobile = constraints.maxWidth < 768;
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 20 : 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               Text(
                 'Audit Trail',
                 style: TextStyle(
@@ -3659,130 +3676,130 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 24),
-              Container(
+          Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
+              boxShadow: [
+                BoxShadow(
                       color: Colors.black.withOpacity(0.02),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.filter_list_rounded, color: Colors.grey),
-                        const SizedBox(width: 12),
+                    const Icon(Icons.filter_list_rounded, color: Colors.grey),
+                    const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            () {
-                              final String prefix = _showBookingOnly
-                                  ? 'Showing booking logs'
-                                  : 'Showing audit logs';
+                      () {
+                        final String prefix = _showBookingOnly
+                            ? 'Showing booking logs'
+                            : 'Showing audit logs';
 
-                              if (_startDate == null && _endDate == null) {
-                                return _showBookingOnly
-                                    ? 'Showing last 100 booking logs'
-                                    : 'Showing last 100 audit logs';
-                              } else if (_startDate != null && _endDate == null) {
-                                return '$prefix from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}';
-                              } else if (_startDate == null && _endDate != null) {
-                                return '$prefix up to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}';
-                              } else {
-                                return '$prefix from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} '
-                                    'to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}';
-                              }
-                            }(),
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                        if (_startDate == null && _endDate == null) {
+                          return _showBookingOnly
+                              ? 'Showing last 100 booking logs'
+                              : 'Showing last 100 audit logs';
+                        } else if (_startDate != null && _endDate == null) {
+                          return '$prefix from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}';
+                        } else if (_startDate == null && _endDate != null) {
+                          return '$prefix up to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}';
+                        } else {
+                          return '$prefix from ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} '
+                              'to ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}';
+                        }
+                      }(),
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (_startDate != null || _endDate != null)
-                          TextButton.icon(
-                            onPressed: _clearDateFilter,
-                            icon: const Icon(Icons.clear, size: 16),
-                            label: const Text('Clear'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.grey[700], 
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(color: Colors.grey[300]!),
-                              ),
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _selectDateRange(context),
-                        icon: const Icon(Icons.calendar_today, size: 16),
-                        label: Text(
-                          (_startDate == null || _endDate == null)
-                              ? 'Select date range'
-                              : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
-                                ' → '
-                                '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                    const Spacer(),
+                    if (_startDate != null || _endDate != null)
+                      TextButton.icon(
+                        onPressed: _clearDateFilter,
+                        icon: const Icon(Icons.clear, size: 16),
+                        label: const Text('Clear'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey[700], 
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(color: Colors.grey[300]!),
                           ),
-                          side: BorderSide(color: Theme.of(context).primaryColor),
-                          foregroundColor: Theme.of(context).primaryColor,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilterChip(
-                        avatar: const Icon(Icons.book_rounded, size: 18),
-                        label: const Text('Bookings only'),
-                        selected: _showBookingOnly,
-                        onSelected: (selected) {
-                          setState(() {
-                            _showBookingOnly = selected;
-                          });
-                        },
-                      ),
-                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              StreamBuilder<List<AuditLog>>(
-                stream: _auditTrail.getAuditLogs(
-                  startDate: _startDate,
-                  endDate: _endDate != null
-                      ? DateTime(
-                          _endDate!.year,
-                          _endDate!.month,
-                          _endDate!.day + 1,
-                        )
-                      : null,
-                  limit: _startDate == null && _endDate == null ? 100 : null,
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectDateRange(context),
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(
+                      (_startDate == null || _endDate == null)
+                          ? 'Select date range'
+                          : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
+                            ' → '
+                            '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                          overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Theme.of(context).primaryColor),
+                      foregroundColor: Theme.of(context).primaryColor,
+                    ),
+                  ),
                 ),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilterChip(
+                    avatar: const Icon(Icons.book_rounded, size: 18),
+                    label: const Text('Bookings only'),
+                    selected: _showBookingOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showBookingOnly = selected;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+              StreamBuilder<List<AuditLog>>(
+              stream: _auditTrail.getAuditLogs(
+                startDate: _startDate,
+                endDate: _endDate != null
+                    ? DateTime(
+                        _endDate!.year,
+                        _endDate!.month,
+                        _endDate!.day + 1,
+                      )
+                    : null,
+                limit: _startDate == null && _endDate == null ? 100 : null,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(40),
                         child: Column(
@@ -3795,22 +3812,22 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  }
+                    ),
+                  );
+                }
 
-                  if (!snapshot.hasData) {
+                if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator(color: Colors.grey));
-                  }
+                }
 
-                  var logs = snapshot.data!;
-                  if (_showBookingOnly) {
-                    logs = logs
-                        .where((log) => log.resourceType == 'booking')
-                        .toList();
-                  }
+                var logs = snapshot.data!;
+                if (_showBookingOnly) {
+                  logs = logs
+                      .where((log) => log.resourceType == 'booking')
+                      .toList();
+                }
 
-                  if (logs.isEmpty) {
+                if (logs.isEmpty) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(40),
@@ -3819,29 +3836,29 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             Icon(Icons.history_toggle_off_rounded, size: 64, color: Colors.grey.shade300),
                             const SizedBox(height: 16),
                             Text(
-                              'No audit logs found for the selected filters.',
+                      'No audit logs found for the selected filters.',
                               style: TextStyle(color: Colors.grey.shade600),
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  }
+                    ),
+                  );
+                }
 
-                  return ListView.separated(
+                return ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: logs.length,
+                  itemCount: logs.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final log = logs[index];
+                  itemBuilder: (context, index) {
+                    final log = logs[index];
                       return _buildAuditLogCard(log, isMobile: isMobile);
-                    },
-                  );
-                },
-              ),
-            ],
+                  },
+                );
+              },
           ),
+        ],
+      ),
         );
       },
     );
@@ -3901,9 +3918,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     SizedBox(width: isMobile ? 4 : 6),
                     Expanded(
                       child: Text(
-                        log.userEmail,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
+                      log.userEmail,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
                           fontSize: isMobile ? 13 : 14,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -3943,9 +3960,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         final isMobile = constraints.maxWidth < 768;
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 20 : 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               Text(
                 'System Management',
                 style: TextStyle(
@@ -3956,47 +3973,47 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+                Text(
                 'System tools and maintenance',
-                style: TextStyle(
+                  style: TextStyle(
                   fontSize: isMobile ? 14 : 15,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 24),
+                    color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: 2,
+              itemCount: 2,
                 separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return _buildSystemCard(
-                      icon: Icons.room_rounded,
-                      title: 'Initialize Rooms',
-                      description: 'Create or refresh all sample room data in the system',
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _buildSystemCard(
+                    icon: Icons.room_rounded,
+                    title: 'Initialize Rooms',
+                    description: 'Create or refresh all sample room data in the system',
                       gradient: const LinearGradient(
                         colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
                       ),
-                      onTap: _initializeRooms,
+                    onTap: _initializeRooms,
                       isMobile: isMobile,
-                    );
-                  } else {
-                    return _buildSystemCard(
+                  );
+                } else {
+                  return _buildSystemCard(
                       icon: Icons.cleaning_services_rounded,
-                      title: 'Cleanup Audit Logs',
-                      description: 'Delete audit records older than 90 days to optimize performance',
+                    title: 'Cleanup Audit Logs',
+                    description: 'Delete audit records older than 90 days to optimize performance',
                       gradient: const LinearGradient(
                         colors: [Color(0xFF38B2AC), Color(0xFF319795)],
                       ),
-                      onTap: _cleanupAuditLogs,
+                    onTap: _cleanupAuditLogs,
                       isMobile: isMobile,
-                    );
-                  }
-                },
-              ),
-            ],
+                  );
+                }
+              },
           ),
+        ],
+      ),
         );
       },
     );
@@ -4014,44 +4031,44 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        onTap: onTap,
+      onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Container(
+      child: Container(
           padding: EdgeInsets.all(isMobile ? 16 : 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        decoration: BoxDecoration(
+          color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.grey.shade100),
-            boxShadow: [
-              BoxShadow(
+          boxShadow: [
+            BoxShadow(
                 color: Colors.black.withOpacity(0.02),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
                 width: isMobile ? 48 : 60,
                 height: isMobile ? 48 : 60,
-                decoration: BoxDecoration(
+              decoration: BoxDecoration(
                   gradient: gradient,
                   borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
+              ),
+              child: Icon(
+                icon,
                   color: Colors.white,
                   size: isMobile ? 22 : 28,
-                ),
               ),
+            ),
               SizedBox(width: isMobile ? 12 : 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: isMobile ? 15 : 17,
@@ -4060,20 +4077,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: isMobile ? 4 : 8),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
                         fontSize: isMobile ? 13 : 14,
-                        height: 1.5,
-                      ),
+                      height: 1.5,
+                    ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ],
           ),
         ),
       ),
@@ -4211,9 +4228,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
               const SizedBox(height: 16),
               Column(
-                mainAxisSize: MainAxisSize.min,
-                children: UserRole.values.map((role) {
-                  return RadioListTile<UserRole>(
+          mainAxisSize: MainAxisSize.min,
+          children: UserRole.values.map((role) {
+            return RadioListTile<UserRole>(
                     title: Text(
                       role.name.toUpperCase(),
                       style: TextStyle(
@@ -4221,34 +4238,34 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    value: role,
-                    groupValue: user.role,
-                    onChanged: (value) {
-                      if (value != null) {
-                        _userService.updateUserRole(user.id, value, callerUserId: _currentUser?.id);
+              value: role,
+              groupValue: user.role,
+              onChanged: (value) {
+                if (value != null) {
+                  _userService.updateUserRole(user.id, value, callerUserId: _currentUser?.id);
                         // Log audit trail - silently handle permission errors
-                        _auditTrail.logAction(
-                          userId: _currentUser!.id,
-                          userEmail: _currentUser!.email,
-                          userRole: _currentUser!.role,
-                          action: AuditAction.userRoleChanged,
-                          resourceType: 'user',
-                          resourceId: user.id,
-                          details: {
-                            'oldRole': user.role.name,
-                            'newRole': value.name,
-                          },
+                  _auditTrail.logAction(
+                    userId: _currentUser!.id,
+                    userEmail: _currentUser!.email,
+                    userRole: _currentUser!.role,
+                    action: AuditAction.userRoleChanged,
+                    resourceType: 'user',
+                    resourceId: user.id,
+                    details: {
+                      'oldRole': user.role.name,
+                      'newRole': value.name,
+                    },
                         ).catchError((e) {
                           // Silently handle permission errors
                           debugPrint('Audit trail logging failed (permission issue): $e');
                         });
-                        Navigator.pop(context);
-                      }
-                    },
+                  Navigator.pop(context);
+                }
+              },
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     tileColor: Colors.grey.shade50,
-                  );
-                }).toList(),
+            );
+          }).toList(),
               ),
             ],
           ),
@@ -4286,7 +4303,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+          children: [
               Container(
                 width: 80,
                 height: 80,
@@ -4305,7 +4322,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         ),
                       )
                     : Center(
-                        child: Text(
+              child: Text(
                           user.email[0].toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
@@ -4340,20 +4357,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
-                  children: [
-                    _buildDetailRow('Role', user.role.name.toUpperCase()),
-                    _buildDetailRow('Status', user.isActive ? 'Active' : 'Inactive'),
-                    _buildDetailRow('Created', _formatDateTime(user.createdAt)),
-                    if (user.lastLoginAt != null)
-                      _buildDetailRow('Last Login', _formatDateTime(user.lastLoginAt!)),
-                  ],
-                ),
+          children: [
+            _buildDetailRow('Role', user.role.name.toUpperCase()),
+            _buildDetailRow('Status', user.isActive ? 'Active' : 'Inactive'),
+            _buildDetailRow('Created', _formatDateTime(user.createdAt)),
+            if (user.lastLoginAt != null)
+              _buildDetailRow('Last Login', _formatDateTime(user.lastLoginAt!)),
+          ],
+        ),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: TextButton(
-                  onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -4516,7 +4533,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context, false),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -4551,7 +4568,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         ],
                       ),
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(context, true),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -4583,6 +4600,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       await _authService.signOut();
       if (mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const LoginPage(),
+          ),
+        );
       }
     }
   }

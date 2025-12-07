@@ -67,13 +67,8 @@ class _RegisterPageState extends State<RegisterPage>
             _isSendingOTP = false;
           });
           
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP sent to your email!'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          // Show OTP popup immediately
+          _showOTPDialog();
         }
       } catch (e) {
         if (mounted) {
@@ -91,6 +86,147 @@ class _RegisterPageState extends State<RegisterPage>
         }
       }
     }
+  }
+
+  void _showOTPDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.blue.shade600),
+              const SizedBox(width: 12),
+              const Text(
+                'Enter OTP',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Form(
+            key: _otpFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'We sent a 6-digit code to ${_emailController.text}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  autofocus: true,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 8,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '000000',
+                    hintStyle: TextStyle(
+                      fontSize: 24,
+                      letterSpacing: 8,
+                      color: Colors.grey.shade400,
+                    ),
+                    prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade600),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter OTP';
+                    }
+                    if (value.length != 6) {
+                      return 'OTP must be 6 digits';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _isSendingOTP ? null : () {
+                        Navigator.of(context).pop();
+                        _resetOTPFlow();
+                        _sendOTP();
+                      },
+                      child: Text(
+                        'Resend OTP',
+                        style: TextStyle(
+                          color: Colors.blue.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetOTPFlow();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: (_isLoading || _isSendingOTP) ? null : () async {
+                if (_otpFormKey.currentState!.validate()) {
+                  Navigator.of(context).pop();
+                  await _verifyOTPAndRegister();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Send OTP'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _verifyOTPAndRegister() async {
@@ -495,7 +631,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             prefixIcon: Icon(Icons.lock_outlined, color: Colors.grey.shade600),
                                             suffixIcon: IconButton(
                                               icon: Icon(
-                                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                                 color: Colors.grey.shade600,
                                               ),
                                               onPressed: () {
@@ -536,7 +672,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             prefixIcon: Icon(Icons.lock_outlined, color: Colors.grey.shade600),
                                             suffixIcon: IconButton(
                                               icon: Icon(
-                                                _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                                _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                                 color: Colors.grey.shade600,
                                               ),
                                               onPressed: () {
@@ -565,9 +701,43 @@ class _RegisterPageState extends State<RegisterPage>
                                         ),
                                         const SizedBox(height: 32),
 
-                                        // Send OTP or OTP Input Section
-                                        if (!_otpSent) ...[
-                                          // Send OTP Button
+                                        // Register Now Button (only shown when OTP popup is displayed)
+                                        if (_otpSent) ...[
+                                          SizedBox(
+                                            height: 56,
+                                            child: ElevatedButton(
+                                              onPressed: (_isLoading || _isSendingOTP) ? null : () {
+                                                _showOTPDialog();
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue.shade600,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                elevation: 3,
+                                                shadowColor: Colors.blue.shade200,
+                                              ),
+                                              child: _isLoading
+                                                  ? const SizedBox(
+                                                      height: 24,
+                                                      width: 24,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                      ),
+                                                    )
+                                                  : const Text(
+                                                      'Register Now',
+                                                      style: TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                            ),
+                                          ),
+                                        ] else ...[
+                                          // Send OTP Button (triggers OTP and shows popup)
                                           SizedBox(
                                             height: 56,
                                             child: ElevatedButton(
@@ -591,143 +761,12 @@ class _RegisterPageState extends State<RegisterPage>
                                                       ),
                                                     )
                                                   : const Text(
-                                                      'Send OTP',
+                                                      'Register now',
                                                       style: TextStyle(
                                                         fontSize: 18,
                                                         fontWeight: FontWeight.bold,
                                                       ),
                                                     ),
-                                            ),
-                                          ),
-                                        ] else ...[
-                                          // OTP Input Section
-                                          Form(
-                                            key: _otpFormKey,
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                                              children: [
-                                                // OTP Title
-                                                Text(
-                                                  'Enter OTP',
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.grey.shade700,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                
-                                                // OTP Description
-                                                Text(
-                                                  'We sent a 6-digit code to ${_emailController.text}',
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.grey.shade600,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 16),
-                                                
-                                                // OTP Input Field
-                                                TextFormField(
-                                                  controller: _otpController,
-                                                  keyboardType: TextInputType.number,
-                                                  textAlign: TextAlign.center,
-                                                  inputFormatters: [
-                                                    FilteringTextInputFormatter.digitsOnly,
-                                                    LengthLimitingTextInputFormatter(6),
-                                                  ],
-                                                  style: const TextStyle(
-                                                    fontSize: 24,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: 8,
-                                                  ),
-                                                  decoration: InputDecoration(
-                                                    hintText: '000000',
-                                                    hintStyle: TextStyle(
-                                                      fontSize: 24,
-                                                      letterSpacing: 8,
-                                                      color: Colors.grey.shade400,
-                                                    ),
-                                                    prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade600),
-                                                    suffixIcon: IconButton(
-                                                      icon: Icon(Icons.close, color: Colors.grey.shade600),
-                                                      onPressed: _resetOTPFlow,
-                                                      tooltip: 'Cancel OTP',
-                                                    ),
-                                                    filled: true,
-                                                    fillColor: Colors.grey.shade50,
-                                                    border: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      borderSide: BorderSide.none,
-                                                    ),
-                                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                                                  ),
-                                                  validator: (value) {
-                                                    if (value == null || value.isEmpty) {
-                                                      return 'Please enter OTP';
-                                                    }
-                                                    if (value.length != 6) {
-                                                      return 'OTP must be 6 digits';
-                                                    }
-                                                    return null;
-                                                  },
-                                                ),
-                                                const SizedBox(height: 16),
-                                                
-                                                // Resend OTP Link
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.end,
-                                                  children: [
-                                                    TextButton(
-                                                      onPressed: _isSendingOTP ? null : () {
-                                                        _resetOTPFlow();
-                                                        _sendOTP();
-                                                      },
-                                                      child: Text(
-                                                        'Resend OTP',
-                                                        style: TextStyle(
-                                                          color: Colors.blue.shade600,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 16),
-                                                
-                                                // Verify & Register Button
-                                                SizedBox(
-                                                  height: 56,
-                                                  child: ElevatedButton(
-                                                    onPressed: (_isLoading || _isSendingOTP) ? null : _verifyOTPAndRegister,
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: Colors.blue.shade600,
-                                                      foregroundColor: Colors.white,
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(12),
-                                                      ),
-                                                      elevation: 3,
-                                                      shadowColor: Colors.blue.shade200,
-                                                    ),
-                                                    child: _isLoading
-                                                        ? const SizedBox(
-                                                            height: 24,
-                                                            width: 24,
-                                                            child: CircularProgressIndicator(
-                                                              strokeWidth: 2,
-                                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                            ),
-                                                          )
-                                                        : const Text(
-                                                            'Verify & Register',
-                                                            style: TextStyle(
-                                                              fontSize: 18,
-                                                              fontWeight: FontWeight.bold,
-                                                            ),
-                                                          ),
-                                                  ),
-                                                ),
-                                              ],
                                             ),
                                           ),
                                         ],

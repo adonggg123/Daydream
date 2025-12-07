@@ -3,6 +3,7 @@ import '../services/event_booking_service.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
 import '../models/booking.dart';
+import 'theme_constants.dart';
 
 class EventBookingPage extends StatefulWidget {
   const EventBookingPage({super.key});
@@ -41,6 +42,16 @@ class _EventBookingPageState extends State<EventBookingPage> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       helpText: 'Select event date',
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: AppTheme.primaryColor,
+            colorScheme: const ColorScheme.light(primary: AppTheme.primaryColor),
+            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
@@ -51,10 +62,13 @@ class _EventBookingPageState extends State<EventBookingPage> {
     final user = _authService.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to book an event.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Please sign in to book an event.'),
+          backgroundColor: AppTheme.errorColor,
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -74,9 +88,12 @@ class _EventBookingPageState extends State<EventBookingPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Event booked for ${_selectedDate.toLocal().toString().split(' ').first}.'),
-            backgroundColor: Colors.green,
+            content: Text('Event booked for ${_formatDate(_selectedDate)}'),
+            backgroundColor: AppTheme.successColor,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         Navigator.of(context).pop(true);
@@ -86,8 +103,11 @@ class _EventBookingPageState extends State<EventBookingPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorColor,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -96,6 +116,10 @@ class _EventBookingPageState extends State<EventBookingPage> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
@@ -108,175 +132,443 @@ class _EventBookingPageState extends State<EventBookingPage> {
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Event Booking'),
-        backgroundColor: Colors.purple.shade600,
+        title: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: ClipOval(
+                child: Transform.scale(
+                  scale: 1.43, // Scale to maintain 80x80 visual size (80/56 = 1.43)
+                  child: Image.asset(
+                    'assets/icons/LOGO2.png',
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Event Booking',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
       ),
       body: user == null
           ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Please log in to book an event.'),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Back'),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: AppTheme.backgroundColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.borderColor, width: 2),
+                      ),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: 60,
+                        color: AppTheme.textSecondary.withOpacity(0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Sign In Required',
+                      style: AppTheme.heading2.copyWith(color: AppTheme.textPrimary),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Please sign in to book events at our resort',
+                      style: AppTheme.bodyLarge.copyWith(color: AppTheme.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: AppTheme.primaryButtonStyle,
+                      child: const Text('Go Back'),
+                    ),
+                  ],
+                ),
               ),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Event Details',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 16),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.purple.shade100,
-                              child: const Icon(Icons.calendar_today, color: Colors.purple),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: AppTheme.cardDecoration,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.accentGradient,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.event,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                            title: Text(
-                              '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Event Details',
+                              style: AppTheme.heading3,
                             ),
-                            subtitle: const Text('Function hall (one event per day)'),
-                            trailing: TextButton(
-                              onPressed: _pickDate,
-                              child: const Text('Change'),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        GestureDetector(
+                          onTap: _pickDate,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.backgroundColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppTheme.borderColor),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.calendar_today,
+                                    color: AppTheme.primaryColor,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Event Date',
+                                        style: AppTheme.bodyMedium.copyWith(
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _formatDate(_selectedDate),
+                                        style: AppTheme.heading3.copyWith(fontSize: 18),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ],
                             ),
                           ),
-                          const Divider(),
-                          const Text(
-                            'Event type',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: EventType.values
-                                .where((e) => e != EventType.none)
-                                .map(
-                                  (eventType) => ChoiceChip(
-                                    label: Text(Booking.getEventTypeDisplay(eventType)),
-                                    selected: _eventType == eventType,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Event Type',
+                          style: AppTheme.heading3.copyWith(fontSize: 16),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: EventType.values
+                              .where((e) => e != EventType.none)
+                              .map(
+                                (eventType) {
+                                  final isSelected = _eventType == eventType;
+                                  return ChoiceChip(
+                                    label: Text(
+                                      Booking.getEventTypeDisplay(eventType),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: isSelected ? Colors.white : AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    selected: isSelected,
                                     onSelected: (selected) {
                                       if (selected) {
                                         setState(() => _eventType = eventType);
                                       }
                                     },
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ],
-                      ),
+                                    selectedColor: AppTheme.primaryColor,
+                                    backgroundColor: Colors.white,
+                                    checkmarkColor: Colors.white,
+                                    side: BorderSide(
+                                      color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  );
+                                },
+                              )
+                              .toList(),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Guests attending',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: AppTheme.cardDecoration,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.people,
+                                color: AppTheme.accentColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Guest Count',
+                              style: AppTheme.heading3,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.backgroundColor,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.borderColor),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
+                          child: Column(
                             children: [
-                              IconButton(
-                                onPressed: _peopleCount > 10
-                                    ? () => setState(() => _peopleCount -= 10)
-                                    : null,
-                                icon: const Icon(Icons.remove),
+                              Slider(
+                                value: _peopleCount.toDouble(),
+                                min: 10,
+                                max: 300,
+                                divisions: 29,
+                                onChanged: (value) {
+                                  setState(() => _peopleCount = value.round());
+                                },
+                                activeColor: AppTheme.primaryColor,
+                                inactiveColor: AppTheme.borderColor,
                               ),
-                              Expanded(
-                                child: Slider(
-                                  value: _peopleCount.toDouble(),
-                                  min: 10,
-                                  max: 300,
-                                  divisions: 29,
-                                  label: '$_peopleCount',
-                                  onChanged: (value) {
-                                    setState(() => _peopleCount = value.round());
-                                  },
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: _peopleCount < 300
-                                    ? () => setState(() => _peopleCount += 10)
-                                    : null,
-                                icon: const Icon(Icons.add),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      onPressed: _peopleCount > 10
+                                          ? () => setState(() => _peopleCount -= 10)
+                                          : null,
+                                      icon: Icon(
+                                        Icons.remove,
+                                        color: _peopleCount > 10 ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                      ),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                      ),
+                                    ),
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '$_peopleCount',
+                                          style: AppTheme.heading2.copyWith(
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                        ),
+                                        Text(
+                                          'guests',
+                                          style: AppTheme.bodyMedium.copyWith(
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      onPressed: _peopleCount < 300
+                                          ? () => setState(() => _peopleCount += 10)
+                                          : null,
+                                      icon: Icon(
+                                        Icons.add,
+                                        color: _peopleCount < 300 ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                      ),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                          Center(
-                            child: Text(
-                              '$_peopleCount guests',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  TextField(
-                    controller: _notesController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: 'Event notes / requests',
-                      alignLabelWithHint: true,
-                      hintText: 'Share more details about your celebration...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: AppTheme.cardDecoration,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppTheme.infoColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.note,
+                                color: AppTheme.infoColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Additional Notes',
+                              style: AppTheme.heading3,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _notesController,
+                          maxLines: 4,
+                          decoration: AppTheme.textFieldDecoration.copyWith(
+                            labelText: 'Special requests or notes',
+                            hintText: 'Tell us more about your event...',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
+                  const SizedBox(height: 32),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
                     child: ElevatedButton(
                       onPressed: _isSubmitting ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      style: AppTheme.gradientButtonStyle.copyWith(
+                        padding: MaterialStateProperty.all<EdgeInsets>(
+                          const EdgeInsets.symmetric(vertical: 20),
+                        ),
                       ),
                       child: _isSubmitting
                           ? const SizedBox(
                               height: 24,
                               width: 24,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text('Confirm event booking'),
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Confirm Event Booking',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Icon(Icons.celebration, size: 20),
+                              ],
+                            ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.backgroundColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppTheme.infoColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Our event coordinator will contact you within 24 hours to confirm details.',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
     );
   }
 }
-

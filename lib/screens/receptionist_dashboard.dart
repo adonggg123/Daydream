@@ -8,6 +8,7 @@ import '../services/notification_service.dart';
 import '../services/role_based_access_control.dart';
 import '../models/user.dart';
 import '../models/room.dart';
+import 'login_page.dart';
 
 class ReceptionistDashboard extends StatefulWidget {
   const ReceptionistDashboard({super.key});
@@ -456,6 +457,11 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
     await _authService.signOut();
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const LoginPage(),
+        ),
+      );
     }
   }
 
@@ -560,8 +566,8 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
                               ],
                             ),
                             constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
+                              minWidth: 20,
+                              minHeight: 20,
                             ),
                             child: Center(
                               child: Text(
@@ -581,42 +587,87 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
                 },
               ),
               const SizedBox(width: 12),
-              CircleAvatar(
-                backgroundColor: theme.colorScheme.primary,
-                child: Text(
-                  _currentUser?.displayName?.isNotEmpty == true 
-                      ? _currentUser!.displayName![0].toUpperCase() 
-                      : 'R',
-                  style: const TextStyle(color: Colors.white),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _currentUser?.displayName?.isNotEmpty == true
+                          ? _currentUser!.displayName![0].toUpperCase()
+                          : 'R',
+                      style: const TextStyle(
+                        color: Color(0xFF5A67D8),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              if (!isMobile) const SizedBox(width: 12),
               if (!isMobile)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _currentUser?.displayName ?? 'Receptionist',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFF1F2937),
+                SizedBox(
+                  width: 150,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _currentUser?.displayName ?? 'Receptionist',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      _currentUser?.email ?? '',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      Text(
+                        _currentUser?.email ?? 'receptionist@example.com',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
             ],
           ),
+          if (!isMobile) const SizedBox(height: 8),
+          if (!isMobile)
+            Text(
+              '${_currentUser?.displayName ?? 'Receptionist'} • ${_formatDateTime(DateTime.now())}',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return '${weekdays[dateTime.weekday - 1]}, ${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
   }
 
   String _getTitle() {
@@ -711,7 +762,16 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: icon == Icons.attach_money_rounded
+                  ? Text(
+                      '₱',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : Icon(icon, color: Colors.white, size: 22),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -854,14 +914,15 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
 
   Widget _buildRecentBookingsCard({bool isMobile = false}) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 30,
+            spreadRadius: 2,
           ),
         ],
       ),
@@ -869,24 +930,45 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF5A67D8).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.hotel_rounded, color: Color(0xFF5A67D8), size: 22),
+                  child: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 24),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Recent Bookings',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Recent Bookings',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(
+                    'Latest 8',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ),
               ],
@@ -904,14 +986,15 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
 
   Widget _buildGuestRequestsCard({bool isMobile = false}) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 30,
+            spreadRadius: 2,
           ),
         ],
       ),
@@ -919,24 +1002,29 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF48BB78).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.support_agent_rounded, color: Color(0xFF48BB78), size: 22),
+                  child: const Icon(Icons.support_agent_rounded, color: Colors.white, size: 24),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Guest Requests',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Guest Requests',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
               ],
@@ -954,44 +1042,55 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
 
   Widget _buildQuickActions({bool isMobile = false}) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 30,
+            spreadRadius: 2,
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF9F7AEA).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFED8936), Color(0xFFDD6B20)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 24),
                 ),
-                child: const Icon(Icons.flash_on_rounded, color: Color(0xFF9F7AEA), size: 22),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Quick Actions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Quick Actions',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildActionTile(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Column(
+              children: [
+                _buildActionTile(
             icon: Icons.add_box_rounded,
             title: 'Create Booking',
             color: const Color(0xFF5A67D8),
@@ -1018,6 +1117,10 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
             color: const Color(0xFF9F7AEA),
             onTap: () {/* TODO: Generate */},
           ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );

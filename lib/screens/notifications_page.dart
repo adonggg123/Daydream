@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import 'theme_constants.dart';
 
 class NotificationsPage extends StatefulWidget {
   final VoidCallback? onPageOpened;
@@ -21,7 +22,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   void initState() {
     super.initState();
-    // Mark all notifications as read when page is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markAllAsRead();
     });
@@ -33,7 +33,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       try {
         await _notificationService.markAllNotificationsAsRead(user.uid);
         _hasMarkedAsRead = true;
-        // Notify parent that page was opened
         if (widget.onPageOpened != null) {
           widget.onPageOpened!();
         }
@@ -50,11 +49,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+      return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+      return '${difference.inHours}h ago';
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+      return '${difference.inDays}d ago';
     } else {
       return _dateFormat.format(dateTime);
     }
@@ -83,16 +82,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
     switch (type) {
       case 'booking_accepted':
       case 'event_booking_accepted':
-        return Colors.green;
+        return AppTheme.successColor;
       case 'booking_rejected':
       case 'event_booking_rejected':
-        return Colors.red;
+        return AppTheme.errorColor;
       case 'post_liked':
-        return Colors.pink;
+        return AppTheme.accentColor;
       case 'post_commented':
-        return Colors.blue;
+        return AppTheme.infoColor;
       default:
-        return Colors.blue;
+        return AppTheme.primaryColor;
     }
   }
 
@@ -101,73 +100,235 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final user = _authService.currentUser;
     if (user == null) {
       return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
         appBar: AppBar(
-          title: const Text('Notifications'),
-          backgroundColor: Colors.purple.shade600,
+          title: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                child: ClipOval(
+                  child: Transform.scale(
+                    scale: 1.43, // Scale to maintain 80x80 visual size (80/56 = 1.43)
+                  child: Image.asset(
+                    'assets/icons/LOGO2.png',
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                   )
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Notifications',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
+          centerTitle: false,
         ),
-        body: const Center(
-          child: Text('Please log in to view notifications'),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.borderColor, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.notifications_none,
+                    size: 60,
+                    color: AppTheme.textSecondary.withOpacity(0.5),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Sign In Required',
+                  style: AppTheme.heading2.copyWith(color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Please sign in to view notifications',
+                  style: AppTheme.bodyLarge.copyWith(color: AppTheme.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: Colors.purple.shade600,
+        title: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/icons/LOGO2.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Notifications',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
+        actions: [
+          StreamBuilder<int>(
+            stream: _notificationService.getUnreadNotificationCount(user.uid),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              if (unreadCount == 0) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$unreadCount new',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _notificationService.getUserNotifications(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+              ),
+            );
           }
 
           if (snapshot.hasError) {
             return Center(
-              child: Text('Error: ${snapshot.error}'),
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppTheme.errorColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.error_outline,
+                        size: 40,
+                        color: AppTheme.errorColor,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Unable to load notifications',
+                      style: AppTheme.heading3.copyWith(color: AppTheme.errorColor),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Please check your connection',
+                      style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No notifications',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.notifications_none,
+                        size: 60,
+                        color: AppTheme.primaryColor.withOpacity(0.5),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'You\'ll see booking updates here',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
+                    const SizedBox(height: 24),
+                    Text(
+                      'No notifications',
+                      style: AppTheme.heading2.copyWith(color: AppTheme.textPrimary),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    Text(
+                      'You\'ll see booking updates and important announcements here',
+                      style: AppTheme.bodyLarge.copyWith(color: AppTheme.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           final notifications = snapshot.data!;
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             itemCount: notifications.length,
             itemBuilder: (context, index) {
               final notification = notifications[index];
@@ -178,69 +339,108 @@ class _NotificationsPageState extends State<NotificationsPage> {
               final isRead = notification['isRead'] ?? false;
               final notificationId = notification['id'] as String?;
               
-              return Card(
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                decoration: AppTheme.cardDecoration.copyWith(
+                  color: isRead ? Colors.white : AppTheme.primaryColor.withOpacity(0.05),
                 ),
-                color: isRead ? Colors.white : Colors.blue.shade50,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: color.withOpacity(0.2),
-                    child: Icon(icon, color: color),
-                  ),
-                  title: Text(
-                    notification['title'] ?? 'Notification',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isRead ? Colors.grey.shade800 : Colors.black87,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      if (notificationId != null && !isRead) {
+                        _notificationService.markNotificationAsRead(notificationId);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: color,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  notification['title'] ?? 'Notification',
+                                  style: AppTheme.bodyLarge.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: isRead ? AppTheme.textPrimary : Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  notification['message'] ?? '',
+                                  style: AppTheme.bodyMedium.copyWith(
+                                    color: isRead ? AppTheme.textSecondary : AppTheme.textPrimary.withOpacity(0.8),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _formatTime(createdAt),
+                                  style: AppTheme.caption.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (!isRead)
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        notification['message'] ?? '',
-                        style: TextStyle(
-                          color: isRead ? Colors.grey.shade600 : Colors.grey.shade800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatTime(createdAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: !isRead
-                      ? Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      : null,
-                  onTap: () {
-                    // Mark as read when tapped
-                    if (notificationId != null && !isRead) {
-                      _notificationService.markNotificationAsRead(notificationId);
-                    }
-                  },
                 ),
               );
             },
           );
         },
       ),
+      floatingActionButton: StreamBuilder<int>(
+        stream: _notificationService.getUnreadNotificationCount(user.uid),
+        builder: (context, snapshot) {
+          final unreadCount = snapshot.data ?? 0;
+          if (unreadCount == 0) return const SizedBox.shrink();
+          
+          return FloatingActionButton(
+            onPressed: () async {
+              await _notificationService.markAllNotificationsAsRead(user.uid);
+              setState(() {
+                _hasMarkedAsRead = true;
+              });
+            },
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.done_all),
+          );
+        },
+      ),
     );
   }
 }
-
