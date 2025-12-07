@@ -4,7 +4,7 @@ import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'models/user.dart';
-import 'screens/landing_page.dart';
+import 'screens/splash_screens.dart';
 import 'screens/home_page.dart';
 import 'screens/admin_dashboard.dart';
 import 'screens/receptionist_dashboard.dart';
@@ -96,7 +96,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // If user is not authenticated, show landing page
-        return const LandingPage();
+        return const SplashScreen();
       },
     );
   }
