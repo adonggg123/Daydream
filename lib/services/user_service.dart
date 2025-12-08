@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/user.dart';
 import 'role_based_access_control.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final String _usersCollection = 'users';
 
   // Get current user profile
@@ -147,6 +151,77 @@ class UserService {
   // Delete user profile
   Future<void> deleteUserProfile(String userId) async {
     await _firestore.collection(_usersCollection).doc(userId).delete();
+  }
+
+  // Upload profile picture to Firebase Storage
+  Future<String> uploadProfilePicture(File imageFile, String userId) async {
+    try {
+      // Check if file exists
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist');
+      }
+
+      final String fileName = 'profiles/$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final Reference ref = _storage.ref().child(fileName);
+      
+      final UploadTask uploadTask = ref.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      
+      if (snapshot.state != TaskState.success) {
+        throw Exception('Upload failed with state: ${snapshot.state}');
+      }
+      
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('Error uploading profile picture: $e');
+      rethrow;
+    }
+  }
+
+  // Delete profile picture from Firebase Storage
+  Future<void> deleteProfilePicture(String photoUrl) async {
+    try {
+      if (photoUrl.isEmpty || !photoUrl.contains('firebasestorage')) {
+        return; // Not a Firebase Storage URL, skip deletion
+      }
+      
+      final Reference ref = _storage.refFromURL(photoUrl);
+      await ref.delete();
+    } catch (e) {
+      debugPrint('Error deleting profile picture: $e');
+      // Don't throw - image deletion failure shouldn't block profile operations
+    }
+  }
+
+  // Update user profile (displayName and/or photoUrl)
+  Future<void> updateUserProfile({
+    required String userId,
+    String? displayName,
+    String? photoUrl,
+  }) async {
+    try {
+      final updates = <String, dynamic>{};
+      
+      if (displayName != null) {
+        updates['displayName'] = displayName;
+      }
+      if (photoUrl != null) {
+        updates['photoUrl'] = photoUrl;
+      }
+
+      if (updates.isNotEmpty) {
+        // Use set with merge to create document if it doesn't exist
+        await _firestore.collection(_usersCollection).doc(userId).set(
+          updates,
+          SetOptions(merge: true),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating user profile: $e');
+      rethrow;
+    }
   }
 }
 

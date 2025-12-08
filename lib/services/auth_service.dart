@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'user_service.dart';
 import 'audit_trail_service.dart';
 import '../models/user.dart';
@@ -277,6 +278,56 @@ class AuthService {
       
       // Re-throw the original error if Firebase sign-out failed
       throw 'Error signing out. Please try again.';
+    }
+  }
+
+  // Update password
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User not authenticated';
+      }
+
+      if (user.email == null) {
+        throw 'Email not found. Cannot change password.';
+      }
+
+      // Re-authenticate user with current password
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+      
+      // Update password
+      await user.updatePassword(newPassword);
+      
+      // Log audit trail (best-effort)
+      try {
+        final userProfile = await _userService.getUserProfile(user.uid);
+        if (userProfile != null) {
+          await _auditTrail.logAction(
+            userId: user.uid,
+            userEmail: user.email ?? '',
+            userRole: userProfile.role,
+            action: AuditAction.passwordReset,
+            resourceType: 'user',
+            resourceId: user.uid,
+          );
+        }
+      } catch (e) {
+        // Don't fail password update on audit error
+        debugPrint('Error logging password change audit: $e');
+      }
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw e.toString();
     }
   }
 

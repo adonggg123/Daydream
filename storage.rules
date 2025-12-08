@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile pictures - users can upload/delete their own
+    match /profiles/{userId}/{allPaths=**} {
+      // Allow read for authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow write (upload/delete) only for the owner
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Room images - allow read for all, write for admins (adjust as needed)
+    match /rooms/{roomId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      // Add admin-only write rules if needed
+    }
+    
+    // Default: deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

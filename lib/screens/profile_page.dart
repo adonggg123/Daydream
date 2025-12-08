@@ -1,9 +1,14 @@
   import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
 import '../services/booking_service.dart';
 import '../services/event_booking_service.dart';
 import '../models/booking.dart';
 import '../models/event_booking.dart';
+import '../models/user.dart';
 import 'login_page.dart';
 import 'theme_constants.dart';
 
@@ -16,13 +21,39 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
 
   @override
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
-    final userInitial = user?.email?[0].toUpperCase() ?? 'U';
-    final userName = user?.email?.split('@').first ?? 'Guest';
-    final memberSince = _getMemberSince(user?.metadata.creationTime);
+    
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(
+          child: Text(
+            'Please sign in to view your profile',
+            style: AppTheme.bodyLarge,
+          ),
+        ),
+      );
+    }
+
+    return StreamBuilder<AppUser?>(
+      stream: _userService.streamUserProfile(user.uid),
+      builder: (context, snapshot) {
+        final userProfile = snapshot.data;
+        final displayName = userProfile?.displayName ?? '';
+        String userInitial;
+        if (displayName.isNotEmpty) {
+          userInitial = displayName[0].toUpperCase();
+        } else {
+          final email = user.email ?? '';
+          userInitial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
+        }
+        final userName = userProfile?.displayName ?? user.email?.split('@').first ?? 'Guest';
+        final memberSince = _getMemberSince(user.metadata.creationTime);
+        final photoUrl = userProfile?.photoUrl;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -86,45 +117,75 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: Column(
                       children: [
-                        Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 4,
-                                ),
-                                gradient: AppTheme.accentGradient,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  userInitial,
-                                  style: const TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
+                        GestureDetector(
+                          onTap: () => _showEditProfileDialog(context),
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
                                     color: Colors.white,
+                                    width: 4,
                                   ),
+                                  gradient: photoUrl == null ? AppTheme.accentGradient : null,
+                                  color: photoUrl != null ? Colors.transparent : null,
+                                ),
+                                child: photoUrl != null && photoUrl.isNotEmpty
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          photoUrl,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                gradient: AppTheme.accentGradient,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  userInitial,
+                                                  style: const TextStyle(
+                                                    fontSize: 36,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          userInitial,
+                                          style: const TextStyle(
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
-                            ),
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 20),
                         Text(
@@ -137,7 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          user?.email ?? 'No email provided',
+                          user.email ?? 'No email provided',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withOpacity(0.9),
@@ -184,32 +245,19 @@ class _ProfilePageState extends State<ProfilePage> {
                           icon: Icons.person_outline,
                           title: 'Edit Profile',
                           subtitle: 'Update your personal information',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Edit Profile feature coming soon'),
-                                backgroundColor: AppTheme.primaryColor,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                          },
+                          onTap: () => _showEditProfileDialog(context),
                         ),
                         _buildMenuItem(
                           icon: Icons.hotel,
                           title: 'Room Bookings',
                           subtitle: 'View and manage your room reservations',
                           onTap: () {
-                            if (user != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MyBookingsPage(userId: user.uid),
-                                ),
-                              );
-                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MyBookingsPage(userId: user.uid),
+                              ),
+                            );
                           },
                         ),
                         _buildMenuItem(
@@ -217,14 +265,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           title: 'Event Bookings',
                           subtitle: 'Manage your event bookings',
                           onTap: () {
-                            if (user != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MyEventBookingsPage(userId: user.uid),
-                                ),
-                              );
-                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MyEventBookingsPage(userId: user.uid),
+                              ),
+                            );
                           },
                         ),
                         _buildMenuItem(
@@ -320,6 +366,567 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+      },
+    );
+  }
+
+  Future<void> _handleSaveProfile({
+    required BuildContext context,
+    required BuildContext dialogContext,
+    required TextEditingController usernameController,
+    required TextEditingController currentPasswordController,
+    required TextEditingController newPasswordController,
+    required TextEditingController confirmPasswordController,
+    File? selectedImage,
+    String? currentPhotoUrl,
+    required bool canChangePassword,
+  }) async {
+    // Validate username
+    if (usernameController.text.trim().isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a username'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Validate password if any field is filled
+    final hasCurrentPassword = currentPasswordController.text.isNotEmpty;
+    final hasNewPassword = newPasswordController.text.isNotEmpty;
+    final hasConfirmPassword = confirmPasswordController.text.isNotEmpty;
+
+    if (canChangePassword && (hasCurrentPassword || hasNewPassword || hasConfirmPassword)) {
+      if (!hasCurrentPassword || !hasNewPassword || !hasConfirmPassword) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please fill all password fields'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (newPasswordController.text.length < 6) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Password must be at least 6 characters'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (newPasswordController.text != confirmPasswordController.text) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Passwords do not match'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    // Close dialog first
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop();
+    }
+    
+    // Wait for dialog to close
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    if (!context.mounted) return;
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (loadingContext) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Re-check user is authenticated
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('User session expired. Please log in again.');
+      }
+
+      String? newPhotoUrl = currentPhotoUrl;
+
+      // Step 1: Upload photo if selected
+      if (selectedImage != null) {
+        try {
+          // Delete old photo if exists (non-blocking)
+          if (currentPhotoUrl != null && currentPhotoUrl.isNotEmpty) {
+            try {
+              await _userService.deleteProfilePicture(currentPhotoUrl);
+            } catch (e) {
+              debugPrint('Warning: Could not delete old photo: $e');
+              // Continue even if deletion fails
+            }
+          }
+          
+          // Upload new photo
+          newPhotoUrl = await _userService.uploadProfilePicture(
+            selectedImage,
+            currentUser.uid,
+          );
+        } catch (e) {
+          debugPrint('Error uploading photo: $e');
+          throw Exception('Failed to upload photo: ${e.toString()}');
+        }
+      }
+
+      // Step 2: Update password if provided
+      if (canChangePassword && hasCurrentPassword && hasNewPassword && hasConfirmPassword) {
+        try {
+          await _authService.updatePassword(
+            currentPassword: currentPasswordController.text,
+            newPassword: newPasswordController.text,
+          );
+        } catch (e) {
+          debugPrint('Error updating password: $e');
+          // Re-throw with better message
+          final errorStr = e.toString().toLowerCase();
+          if (errorStr.contains('wrong password') || errorStr.contains('wrong-password')) {
+            throw Exception('Current password is incorrect');
+          } else if (errorStr.contains('weak-password')) {
+            throw Exception('Password is too weak. Use at least 6 characters.');
+          } else {
+            throw Exception('Failed to update password: ${e.toString()}');
+          }
+        }
+      }
+
+      // Step 3: Update profile
+      try {
+        await _userService.updateUserProfile(
+          userId: currentUser.uid,
+          displayName: usernameController.text.trim(),
+          photoUrl: newPhotoUrl,
+        );
+      } catch (e) {
+        debugPrint('Error updating profile: $e');
+        throw Exception('Failed to update profile: ${e.toString()}');
+      }
+
+      // Success - close loading and show message
+      if (context.mounted) {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(); // Close loading dialog
+        }
+        
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                (canChangePassword && hasCurrentPassword)
+                  ? 'Profile and password updated successfully!'
+                  : 'Profile updated successfully!',
+              ),
+              backgroundColor: AppTheme.successColor,
+              behavior: SnackBarBehavior.floating,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _handleSaveProfile: $e');
+      
+      if (context.mounted) {
+        // Close loading dialog
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        if (context.mounted) {
+          String errorMsg = 'Error updating profile';
+          final errorStr = e.toString().toLowerCase();
+          
+          if (errorStr.contains('wrong password') || errorStr.contains('wrong-password')) {
+            errorMsg = 'Current password is incorrect';
+          } else if (errorStr.contains('weak-password')) {
+            errorMsg = 'Password is too weak';
+          } else if (errorStr.contains('network') || 
+                     errorStr.contains('internet') || 
+                     errorStr.contains('unavailable') ||
+                     errorStr.contains('socketexception') ||
+                     errorStr.contains('failed host lookup')) {
+            errorMsg = 'Network error. Please check your internet connection and try again.';
+          } else if (errorStr.contains('permission') || errorStr.contains('denied')) {
+            errorMsg = 'Permission denied. Please check your account permissions.';
+          } else if (errorStr.contains('session expired')) {
+            errorMsg = 'Your session has expired. Please log in again.';
+          } else {
+            // Show the actual error message
+            errorMsg = e.toString().replaceAll('Exception: ', '').replaceAll('Error: ', '');
+            if (errorMsg.length > 100) {
+              errorMsg = '${errorMsg.substring(0, 100)}...';
+            }
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'OK',
+                textColor: Colors.white,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showEditProfileDialog(BuildContext context) async {
+    final user = _authService.currentUser;
+    if (user == null || !mounted) return;
+
+    // Check if user can change password (must have email/password provider)
+    final canChangePassword = user.email != null && 
+                              user.providerData.any((info) => info.providerId == 'password');
+
+    // Get current profile
+    final currentProfile = await _userService.getUserProfile(user.uid);
+    final TextEditingController usernameController = TextEditingController(
+      text: currentProfile?.displayName ?? '',
+    );
+    final TextEditingController currentPasswordController = TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
+    File? selectedImage;
+    String? currentPhotoUrl = currentProfile?.photoUrl;
+    bool _obscureCurrentPassword = true;
+    bool _obscureNewPassword = true;
+    bool _obscureConfirmPassword = true;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.edit,
+                              color: AppTheme.primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Edit Profile',
+                              style: AppTheme.heading2,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () async {
+                            try {
+                              final ImagePicker picker = ImagePicker();
+                              final XFile? image = await picker.pickImage(
+                                source: ImageSource.gallery,
+                                imageQuality: 85,
+                              );
+                              if (image != null) {
+                                try {
+                                  final file = File(image.path);
+                                  if (await file.exists()) {
+                                    setDialogState(() {
+                                      selectedImage = file;
+                                    });
+                                  } else {
+                                    throw Exception('Selected image file does not exist');
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error accessing image: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error picking image: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppTheme.primaryColor,
+                                    width: 3,
+                                  ),
+                                  gradient: selectedImage == null && currentPhotoUrl == null
+                                      ? AppTheme.accentGradient
+                                      : null,
+                                  color: selectedImage != null || currentPhotoUrl != null
+                                      ? Colors.transparent
+                                      : null,
+                                ),
+                                child: selectedImage != null
+                                    ? ClipOval(
+                                        child: Image.file(
+                                          selectedImage!,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : (currentPhotoUrl != null && currentPhotoUrl.isNotEmpty)
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              currentPhotoUrl,
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  decoration: BoxDecoration(
+                                                    gradient: AppTheme.accentGradient,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.person,
+                                                    size: 50,
+                                                    color: Colors.white,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.person,
+                                            size: 50,
+                                            color: Colors.white,
+                                          ),
+                              ),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Text(
+                          'Tap to change photo',
+                          style: AppTheme.caption.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: usernameController,
+                        decoration: AppTheme.textFieldDecoration.copyWith(
+                          labelText: 'Username',
+                          hintText: 'Enter your username',
+                          prefixIcon: const Icon(Icons.person_outline),
+                        ),
+                      ),
+                      if (canChangePassword) ...[
+                        const SizedBox(height: 24),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Change Password (Optional)',
+                          style: AppTheme.heading3.copyWith(fontSize: 16),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: currentPasswordController,
+                          obscureText: _obscureCurrentPassword,
+                          decoration: AppTheme.textFieldDecoration.copyWith(
+                            labelText: 'Current Password',
+                            hintText: 'Enter your current password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureCurrentPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _obscureCurrentPassword = !_obscureCurrentPassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: newPasswordController,
+                          obscureText: _obscureNewPassword,
+                          decoration: AppTheme.textFieldDecoration.copyWith(
+                            labelText: 'New Password',
+                            hintText: 'Enter new password',
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureNewPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _obscureNewPassword = !_obscureNewPassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: confirmPasswordController,
+                          obscureText: _obscureConfirmPassword,
+                          decoration: AppTheme.textFieldDecoration.copyWith(
+                            labelText: 'Confirm New Password',
+                            hintText: 'Confirm new password',
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              style: AppTheme.secondaryButtonStyle,
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => _handleSaveProfile(
+                                context: context,
+                                dialogContext: dialogContext,
+                                usernameController: usernameController,
+                                currentPasswordController: currentPasswordController,
+                                newPasswordController: newPasswordController,
+                                confirmPasswordController: confirmPasswordController,
+                                selectedImage: selectedImage,
+                                currentPhotoUrl: currentPhotoUrl,
+                                canChangePassword: canChangePassword,
+                              ),
+                              style: AppTheme.gradientButtonStyle,
+                              child: const Text('Save Changes'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    usernameController.dispose();
   }
 
   Widget _buildMenuItem({
@@ -494,26 +1101,7 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
-              child: ClipOval(
-                child: Transform.scale(
-                  scale: 1.43, // Scale to maintain 80x80 visual size (80/56 = 1.43)
-                child: Image.asset(
-                  'assets/icons/LOGO2.png',
-                  width: 68,
-                  height: 68,
-                  fit: BoxFit.cover,
-                 )
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 1),
             const Text(
               'My Room Bookings',
               style: TextStyle(
@@ -1506,26 +2094,7 @@ class _MyEventBookingsPageState extends State<MyEventBookingsPage> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
-              child: ClipOval(
-                child: Transform.scale(
-                  scale: 1.43, // Scale to maintain 80x80 visual size (80/56 = 1.43)
-                child: Image.asset(
-                  'assets/icons/LOGO2.png',
-                  width: 58,
-                  height: 58,
-                  fit: BoxFit.cover,
-                  )
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 1),
             const Text(
               'My Event Bookings',
               style: TextStyle(

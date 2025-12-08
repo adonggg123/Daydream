@@ -456,11 +456,11 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
   void _handleLogout() async {
     await _authService.signOut();
     if (mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const LoginPage(),
         ),
+        (route) => false,
       );
     }
   }

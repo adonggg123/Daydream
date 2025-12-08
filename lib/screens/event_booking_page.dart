@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/user_service.dart';
 import '../models/booking.dart';
 import 'theme_constants.dart';
+import 'booking_confirmation_page.dart';
 
 class EventBookingPage extends StatefulWidget {
   const EventBookingPage({super.key});
@@ -76,7 +77,7 @@ class _EventBookingPageState extends State<EventBookingPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      await _eventService.createEventBooking(
+      final bookingId = await _eventService.createEventBooking(
         userId: user.uid,
         userEmail: user.email ?? 'unknown',
         eventType: _eventType,
@@ -86,17 +87,14 @@ class _EventBookingPageState extends State<EventBookingPage> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Event booked for ${_formatDate(_selectedDate)}'),
-            backgroundColor: AppTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => BookingSuccessPage(
+              bookingId: bookingId,
+              isEventBooking: true,
             ),
           ),
         );
-        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {

@@ -488,109 +488,88 @@ class _RegisterPageState extends State<RegisterPage>
 
                           // Right side - Registration Form
                           Expanded(
-                            child: Container(
-                              padding: EdgeInsets.all(isMobile ? 24 : 40),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Logo for mobile
-                                  if (isMobile)
-                                    Column(
-                                      children: [
-                                        Container(
-                                          width: 100,
-                                          height: 100,
-                                          margin: const EdgeInsets.only(bottom: 20),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 3),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.2),
-                                                blurRadius: 20,
-                                                offset: const Offset(0, 10),
-                                              ),
-                                            ],
-                                          ),
-                                          child: ClipOval(
-                                            child: Center(
-                                              child: Transform.scale(
-                                                scale: 2.8,
-                                                child: Image.asset(
-                                                  'assets/icons/LOGO2.png',
-                                                  width: 500,
-                                                  height: 500,
-                                                  fit: BoxFit.contain,
-                                                ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Logo outside card (mobile only)
+                                if (isMobile)
+                                  Column(
+                                    children: [
+                                      Container(
+                                        width: 100,
+                                        height: 100,
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 3),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.2),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipOval(
+                                          child: Center(
+                                            child: Transform.scale(
+                                              scale: 2.8,
+                                              child: Image.asset(
+                                                'assets/icons/LOGO2.png',
+                                                width: 500,
+                                                height: 500,
+                                                fit: BoxFit.contain,
                                               ),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Create Account',
-                                          style: TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade800,
-                                          ),
-                                          textAlign: TextAlign.center,
+                                      ),
+                                      Text(
+                                        'Create Account',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Sign up to get started',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 32),
-                                      ],
-                                    )
-                                  else
-                                    Column(
-                                      children: [
-                                        Text(
-                                          'Create New Account',
-                                          style: TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade800,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Fill in your details to register',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 32),
-                                      ],
-                                    ),
-
-                                  Form(
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 20),
+                                    ],
+                                  ),
+                                
+                                // Card
+                                Container(
+                                  padding: EdgeInsets.all(isMobile ? 18 : 28),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Form(
                                     key: _formKey,
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment: CrossAxisAlignment.stretch,
                                       children: [
+                                        // Register Label (centered, larger blue text)
+                                        Center(
+                                          child: Text(
+                                            'Register',
+                                            style: TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade600,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
                                         // Email Field
                                         TextFormField(
                                           controller: _emailController,
@@ -618,7 +597,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             return null;
                                           },
                                         ),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 14),
 
                                         // Password Field
                                         TextFormField(
@@ -658,7 +637,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             return null;
                                           },
                                         ),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 14),
 
                                         // Confirm Password Field
                                         TextFormField(
@@ -699,12 +678,12 @@ class _RegisterPageState extends State<RegisterPage>
                                             return null;
                                           },
                                         ),
-                                        const SizedBox(height: 32),
+                                        const SizedBox(height: 16),
 
                                         // Register Now Button (only shown when OTP popup is displayed)
                                         if (_otpSent) ...[
                                           SizedBox(
-                                            height: 56,
+                                            height: 50,
                                             child: ElevatedButton(
                                               onPressed: (_isLoading || _isSendingOTP) ? null : () {
                                                 _showOTPDialog();
@@ -720,8 +699,8 @@ class _RegisterPageState extends State<RegisterPage>
                                               ),
                                               child: _isLoading
                                                   ? const SizedBox(
-                                                      height: 24,
-                                                      width: 24,
+                                                      height: 20,
+                                                      width: 20,
                                                       child: CircularProgressIndicator(
                                                         strokeWidth: 2,
                                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -730,7 +709,7 @@ class _RegisterPageState extends State<RegisterPage>
                                                   : const Text(
                                                       'Register Now',
                                                       style: TextStyle(
-                                                        fontSize: 18,
+                                                        fontSize: 16,
                                                         fontWeight: FontWeight.bold,
                                                       ),
                                                     ),
@@ -739,7 +718,7 @@ class _RegisterPageState extends State<RegisterPage>
                                         ] else ...[
                                           // Send OTP Button (triggers OTP and shows popup)
                                           SizedBox(
-                                            height: 56,
+                                            height: 50,
                                             child: ElevatedButton(
                                               onPressed: (_isLoading || _isSendingOTP) ? null : _sendOTP,
                                               style: ElevatedButton.styleFrom(
@@ -753,8 +732,8 @@ class _RegisterPageState extends State<RegisterPage>
                                               ),
                                               child: _isSendingOTP
                                                   ? const SizedBox(
-                                                      height: 24,
-                                                      width: 24,
+                                                      height: 20,
+                                                      width: 20,
                                                       child: CircularProgressIndicator(
                                                         strokeWidth: 2,
                                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -763,14 +742,14 @@ class _RegisterPageState extends State<RegisterPage>
                                                   : const Text(
                                                       'Register now',
                                                       style: TextStyle(
-                                                        fontSize: 18,
+                                                        fontSize: 16,
                                                         fontWeight: FontWeight.bold,
                                                       ),
                                                     ),
                                             ),
                                           ),
                                         ],
-                                        const SizedBox(height: 32),
+                                        const SizedBox(height: 16),
 
                                         // Divider with "Or"
                                         Row(
@@ -784,7 +763,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16),
                                               child: Text(
-                                                'Or sign up with',
+                                                'OR',
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
                                                   fontSize: 14,
@@ -799,7 +778,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
 
                                         // Social Registration Buttons
                                         Row(
@@ -868,7 +847,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 32),
+                                        const SizedBox(height: 16),
 
                                         // Login Link
                                         Row(
@@ -878,7 +857,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               'Already have an account? ',
                                               style: TextStyle(
                                                 color: Colors.grey.shade600,
-                                                fontSize: 15,
+                                                fontSize: 14,
                                               ),
                                             ),
                                             GestureDetector(
@@ -889,7 +868,7 @@ class _RegisterPageState extends State<RegisterPage>
                                                 'Login',
                                                 style: TextStyle(
                                                   color: Colors.blue.shade600,
-                                                  fontSize: 15,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -899,8 +878,8 @@ class _RegisterPageState extends State<RegisterPage>
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

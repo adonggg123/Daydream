@@ -7,6 +7,7 @@ import '../services/booking_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
 import 'theme_constants.dart';
+import 'profile_page.dart';
 
 class BookingConfirmationPage extends StatefulWidget {
   final Room room;
@@ -656,128 +657,162 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
 
 class BookingSuccessPage extends StatelessWidget {
   final String bookingId;
+  final bool isEventBooking;
 
-  const BookingSuccessPage({super.key, required this.bookingId});
+  const BookingSuccessPage({
+    super.key,
+    required this.bookingId,
+    this.isEventBooking = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final authService = AuthService();
+    final user = authService.currentUser;
+    final userId = user?.uid ?? '';
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: AppTheme.primaryGradient,
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.check_circle,
-                    size: 60,
-                    color: AppTheme.successColor,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                const Text(
-                  'Booking Confirmed!',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Your booking has been confirmed successfully.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Booking ID',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.7),
+                      child: Icon(
+                        isEventBooking ? Icons.celebration : Icons.check_circle,
+                        size: 60,
+                        color: AppTheme.successColor,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      isEventBooking ? 'Event Booking Confirmed!' : 'Booking Confirmed!',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      isEventBooking
+                          ? 'Your event booking has been confirmed successfully. Our event coordinator will contact you soon.'
+                          : 'Your booking has been confirmed successfully.',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            isEventBooking ? 'Event Booking ID' : 'Booking ID',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            bookingId,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        elevation: 0,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        bookingId,
-                        style: const TextStyle(
+                      child: const Text(
+                        'Back to Home',
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 48),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Back to Home',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: userId.isNotEmpty
+                          ? () {
+                              if (isEventBooking) {
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (context) => MyEventBookingsPage(userId: userId),
+                                  ),
+                                );
+                              } else {
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (context) => MyBookingsPage(userId: userId),
+                                  ),
+                                );
+                              }
+                            }
+                          : null,
+                      child: Text(
+                        isEventBooking ? 'View My Event Bookings' : 'View My Bookings',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    // Navigate to bookings page
-                  },
-                  child: Text(
-                    'View My Bookings',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

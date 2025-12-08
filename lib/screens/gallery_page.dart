@@ -57,11 +57,14 @@ class _GalleryPageState extends State<GalleryPage> {
                     color: Colors.white,
                   ),
                   child: ClipOval(
+                    child: Transform.scale(
+                      scale: 1.43,
                     child: Image.asset(
                       'assets/icons/LOGO2.png',
-                      width: 40,
-                      height: 40,
+                      width: 50,
+                      height: 50,
                       fit: BoxFit.cover,
+                      )
                     ),
                   ),
                 ),

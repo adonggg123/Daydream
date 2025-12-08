@@ -1,1 +1,34 @@
-{"firestore":{"database":"(default)","location":"asia-east1","rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"daydream-20e85","appId":"1:1063225074617:android:06e96ce8f7f81fa58dcc68","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"daydream-20e85","configurations":{"android":"1:1063225074617:android:06e96ce8f7f81fa58dcc68","ios":"1:1063225074617:ios:bd54eea9f66648898dcc68","macos":"1:1063225074617:ios:bd54eea9f66648898dcc68","web":"1:1063225074617:web:018366f7f3869d4c8dcc68","windows":"1:1063225074617:web:6e9872216c70e7f88dcc68"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-east1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "daydream-20e85",
+          "appId": "1:1063225074617:android:06e96ce8f7f81fa58dcc68",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "daydream-20e85",
+          "configurations": {
+            "android": "1:1063225074617:android:06e96ce8f7f81fa58dcc68",
+            "ios": "1:1063225074617:ios:bd54eea9f66648898dcc68",
+            "macos": "1:1063225074617:ios:bd54eea9f66648898dcc68",
+            "web": "1:1063225074617:web:018366f7f3869d4c8dcc68",
+            "windows": "1:1063225074617:web:6e9872216c70e7f88dcc68"
+          }
+        }
+      }
+    }
+  }
+}

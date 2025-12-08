@@ -317,109 +317,88 @@ class _LoginPageState extends State<LoginPage>
 
                           // Right side - Login Form
                           Expanded(
-                            child: Container(
-                              padding: EdgeInsets.all(isMobile ? 24 : 40),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Logo for mobile
-                                  if (isMobile)
-                                    Column(
-                                      children: [
-                                        Container(
-                                          width: 100,
-                                          height: 100,
-                                          margin: const EdgeInsets.only(bottom: 20),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 3),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.2),
-                                                blurRadius: 20,
-                                                offset: const Offset(0, 10),
-                                              ),
-                                            ],
-                                          ),
-                                          child: ClipOval(
-                                            child: Center(
-                                              child: Transform.scale(
-                                                scale: 2.8,
-                                                child: Image.asset(
-                                                  'assets/icons/LOGO2.png',
-                                                  width: 500,
-                                                  height: 500,
-                                                  fit: BoxFit.contain,
-                                                ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Logo outside card (mobile only)
+                                if (isMobile)
+                                  Column(
+                                    children: [
+                                      Container(
+                                        width: 100,
+                                        height: 100,
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 3),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.2),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipOval(
+                                          child: Center(
+                                            child: Transform.scale(
+                                              scale: 2.8,
+                                              child: Image.asset(
+                                                'assets/icons/LOGO2.png',
+                                                width: 500,
+                                                height: 500,
+                                                fit: BoxFit.contain,
                                               ),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Welcome Back',
-                                          style: TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade800,
-                                          ),
-                                          textAlign: TextAlign.center,
+                                      ),
+                                      Text(
+                                        'Welcome Back',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Sign in to continue',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 32),
-                                      ],
-                                    )
-                                  else
-                                    Column(
-                                      children: [
-                                        Text(
-                                          'Sign In to Your Account',
-                                          style: TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade800,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Enter your credentials to continue',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 32),
-                                      ],
-                                    ),
-
-                                  Form(
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 20),
+                                    ],
+                                  ),
+                                
+                                // Card
+                                Container(
+                                  padding: EdgeInsets.all(isMobile ? 18 : 28),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Form(
                                     key: _formKey,
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment: CrossAxisAlignment.stretch,
                                       children: [
+                                        // Login Label (centered, larger blue text)
+                                        Center(
+                                          child: Text(
+                                            'Login',
+                                            style: TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade600,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
                                         // Email Field
                                         TextFormField(
                                           controller: _emailController,
@@ -447,7 +426,7 @@ class _LoginPageState extends State<LoginPage>
                                             return null;
                                           },
                                         ),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 14),
 
                                         // Password Field
                                         TextFormField(
@@ -488,29 +467,11 @@ class _LoginPageState extends State<LoginPage>
                                             return null;
                                           },
                                         ),
-                                        const SizedBox(height: 8),
-
-                                        // Forgot Password
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: TextButton(
-                                            onPressed: () {
-                                              // Add forgot password functionality
-                                            },
-                                            child: Text(
-                                              'Forgot Password?',
-                                              style: TextStyle(
-                                                color: Colors.blue.shade600,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
 
                                         // Login Button
                                         SizedBox(
-                                          height: 56,
+                                          height: 50,
                                           child: ElevatedButton(
                                             onPressed: _isLoading ? null : _handleLogin,
                                             style: ElevatedButton.styleFrom(
@@ -524,8 +485,8 @@ class _LoginPageState extends State<LoginPage>
                                             ),
                                             child: _isLoading
                                                 ? const SizedBox(
-                                                    height: 24,
-                                                    width: 24,
+                                                    height: 20,
+                                                    width: 20,
                                                     child: CircularProgressIndicator(
                                                       strokeWidth: 2,
                                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -534,13 +495,13 @@ class _LoginPageState extends State<LoginPage>
                                                 : const Text(
                                                     'Login',
                                                     style: TextStyle(
-                                                      fontSize: 18,
+                                                      fontSize: 16,
                                                       fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
                                           ),
                                         ),
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
 
                                         // Divider with "Or"
                                         Row(
@@ -554,7 +515,7 @@ class _LoginPageState extends State<LoginPage>
                                             Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16),
                                               child: Text(
-                                                'Or continue with',
+                                                'OR',
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
                                                   fontSize: 14,
@@ -569,7 +530,7 @@ class _LoginPageState extends State<LoginPage>
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
 
                                         // Social Login Buttons
                                         Row(
@@ -638,7 +599,7 @@ class _LoginPageState extends State<LoginPage>
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 32),
+                                        const SizedBox(height: 16),
 
                                         // Sign Up Link
                                         Row(
@@ -648,7 +609,7 @@ class _LoginPageState extends State<LoginPage>
                                               "Don't have an account? ",
                                               style: TextStyle(
                                                 color: Colors.grey.shade600,
-                                                fontSize: 15,
+                                                fontSize: 14,
                                               ),
                                             ),
                                             GestureDetector(
@@ -663,7 +624,7 @@ class _LoginPageState extends State<LoginPage>
                                                 'Sign up',
                                                 style: TextStyle(
                                                   color: Colors.blue.shade600,
-                                                  fontSize: 15,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -673,8 +634,8 @@ class _LoginPageState extends State<LoginPage>
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
