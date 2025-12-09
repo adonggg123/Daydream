@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import '../services/otp_service.dart';
 import 'home_page.dart';
@@ -540,10 +541,10 @@ class _RegisterPageState extends State<RegisterPage>
                                 
                                 // Card
                                 Container(
-                                  padding: EdgeInsets.all(isMobile ? 18 : 28),
+                                  padding: EdgeInsets.all(isMobile ? 30 : 28),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(24),
+                                    borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.1),
@@ -725,7 +726,7 @@ class _RegisterPageState extends State<RegisterPage>
                                                 backgroundColor: Colors.blue.shade600,
                                                 foregroundColor: Colors.white,
                                                 shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderRadius: BorderRadius.circular(3),
                                                 ),
                                                 elevation: 3,
                                                 shadowColor: Colors.blue.shade200,
@@ -788,17 +789,15 @@ class _RegisterPageState extends State<RegisterPage>
                                                 height: 50,
                                                 child: OutlinedButton.icon(
                                                   onPressed: _isLoading ? null : _handleGoogleSignIn,
-                                                  icon: Image.network(
+                                                  icon: SvgPicture.network(
                                                     'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                                                     height: 20,
                                                     width: 20,
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      return const Icon(
-                                                        Icons.g_mobiledata,
-                                                        color: Colors.red,
-                                                        size: 20,
-                                                      );
-                                                    },
+                                                    placeholderBuilder: (context) => const SizedBox(
+                                                      height: 20,
+                                                      width: 20,
+                                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                                    ),
                                                   ),
                                                   label: const Text(
                                                     'Google',
