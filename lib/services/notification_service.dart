@@ -287,6 +287,28 @@ class NotificationService {
     }
     await batch.commit();
   }
+
+  /// Mark admin notification as read
+  Future<void> markAdminNotificationAsRead(String notificationId) async {
+    await _firestore
+        .collection(_adminNotificationsCollection)
+        .doc(notificationId)
+        .update({'isRead': true});
+  }
+
+  /// Mark all admin notifications as read
+  Future<void> markAllAdminNotificationsAsRead() async {
+    final snapshot = await _firestore
+        .collection(_adminNotificationsCollection)
+        .where('isRead', isEqualTo: false)
+        .get();
+    
+    final batch = _firestore.batch();
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
 }
 
 

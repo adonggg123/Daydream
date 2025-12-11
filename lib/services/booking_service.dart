@@ -458,6 +458,20 @@ class BookingService {
     return bookingRef.id;
   }
 
+  // Get booking by ID
+  Future<Booking?> getBookingById(String bookingId) async {
+    try {
+      final doc = await _firestore.collection(_bookingsCollection).doc(bookingId).get();
+      if (!doc.exists) {
+        return null;
+      }
+      return Booking.fromMap(doc.id, Map<String, dynamic>.from(doc.data() as Map));
+    } catch (e) {
+      debugPrint('Error getting booking by ID: $e');
+      return null;
+    }
+  }
+
   // Get user bookings
   Stream<List<Booking>> getUserBookings(String userId) {
     return _firestore

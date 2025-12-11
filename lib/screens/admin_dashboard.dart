@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'dart:io';
 import '../services/user_service.dart';
 import '../services/audit_trail_service.dart';
 import '../models/user.dart';
 // ignore: unused_import
 import '../models/room.dart';
+import '../models/cottage.dart';
 import '../services/booking_service.dart';
+import '../services/cottage_service.dart';
+import '../services/cottage_booking_service.dart';
 import '../services/notification_service.dart';
 import '../models/admin_notification.dart';
 import '../services/auth_service.dart';
@@ -18,6 +22,7 @@ import '../services/event_booking_service.dart';
 import '../models/event_booking.dart';
 import '../models/booking.dart';
 import '../widgets/room_image_widget.dart';
+import '../widgets/cottage_image_widget.dart';
 import '../widgets/profile_image_widget.dart';
 import 'login_page.dart';
 
@@ -32,6 +37,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   final UserService _userService = UserService();
   final AuditTrailService _auditTrail = AuditTrailService();
   final BookingService _bookingService = BookingService();
+  final CottageService _cottageService = CottageService();
+  final CottageBookingService _cottageBookingService = CottageBookingService();
   final NotificationService _notificationService = NotificationService();
   final GuestRequestService _guestRequestService = GuestRequestService();
   final AuthService _authService = AuthService();
@@ -335,17 +342,33 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                 ),
                 _buildNavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Cottage',
+                  index: 3,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                  ),
+                ),
+                _buildNavItem(
                   icon: Icons.calendar_today_rounded,
                   label: 'Room Bookings',
-                  index: 3,
+                  index: 4,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF9F7AEA), Color(0xFF805AD5)],
                   ),
                 ),
                 _buildNavItem(
+                  icon: Icons.home_work_rounded,
+                  label: 'Cottage Bookings',
+                  index: 5,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                  ),
+                ),
+                _buildNavItem(
                   icon: Icons.event_rounded,
                   label: 'Event Bookings',
-                  index: 4,
+                  index: 6,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF687B3), Color(0xFFED64A6)],
                   ),
@@ -353,7 +376,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 _buildNavItem(
                   icon: Icons.support_agent_rounded,
                   label: 'Guest Requests',
-                  index: 5,
+                  index: 7,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF48BB78), Color(0xFF38A169)],
                   ),
@@ -361,7 +384,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 _buildNavItem(
                   icon: Icons.history_toggle_off_rounded,
                   label: 'Audit Trail',
-                  index: 6,
+                  index: 8,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF718096), Color(0xFF4A5568)],
                   ),
@@ -369,7 +392,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 _buildNavItem(
                   icon: Icons.settings_rounded,
                   label: 'System',
-                  index: 7,
+                  index: 9,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF4FD1C5), Color(0xFF38B2AC)],
                   ),
@@ -529,11 +552,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       _NavItemData(icon: Icons.dashboard_rounded, label: 'Dashboard', index: 0),
       _NavItemData(icon: Icons.people_alt_rounded, label: 'Users', index: 1),
       _NavItemData(icon: Icons.king_bed_rounded, label: 'Rooms', index: 2),
-      _NavItemData(icon: Icons.calendar_today_rounded, label: 'Bookings', index: 3),
-      _NavItemData(icon: Icons.event_rounded, label: 'Events', index: 4),
-      _NavItemData(icon: Icons.support_agent_rounded, label: 'Requests', index: 5),
-      _NavItemData(icon: Icons.history_toggle_off_rounded, label: 'Audit', index: 6),
-      _NavItemData(icon: Icons.settings_rounded, label: 'System', index: 7),
+      _NavItemData(icon: Icons.home_rounded, label: 'Cottage', index: 3),
+      _NavItemData(icon: Icons.calendar_today_rounded, label: 'Bookings', index: 4),
+      _NavItemData(icon: Icons.home_work_rounded, label: 'Cottage Bkgs', index: 5),
+      _NavItemData(icon: Icons.event_rounded, label: 'Events', index: 6),
+      _NavItemData(icon: Icons.support_agent_rounded, label: 'Requests', index: 7),
+      _NavItemData(icon: Icons.history_toggle_off_rounded, label: 'Audit', index: 8),
+      _NavItemData(icon: Icons.settings_rounded, label: 'System', index: 9),
     ];
 
     // Show first 4 items in bottom nav, rest in "More"
@@ -761,11 +786,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       case 0: return 'Dashboard Overview';
       case 1: return 'User Management';
       case 2: return 'Room Management';
-      case 3: return 'Room Bookings';
-      case 4: return 'Event Bookings';
-      case 5: return 'Guest Requests';
-      case 6: return 'Audit Trail';
-      case 7: return 'System Settings';
+      case 3: return 'Cottage Management';
+      case 4: return 'Room Bookings';
+      case 5: return 'Cottage Bookings';
+      case 6: return 'Event Bookings';
+      case 7: return 'Guest Requests';
+      case 8: return 'Audit Trail';
+      case 9: return 'System Settings';
       default: return 'Admin Panel';
     }
   }
@@ -834,6 +861,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 builder: (context, snapshot) {
                   final notifications = snapshot.data ?? [];
                   final unreadCount = notifications.where((n) => !n.isRead).length;
+                  final unreadNotifications = notifications.where((n) => !n.isRead && n.bookingId != null).toList();
                       
                   return Stack(
                     clipBehavior: Clip.none,
@@ -849,7 +877,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             Icons.notifications_none_rounded,
                             color: Colors.grey.shade700,
                           ),
-                          onPressed: () {},
+                          onPressed: () async {
+                            // Mark all notifications as read
+                            if (unreadCount > 0) {
+                              await _notificationService.markAllAdminNotificationsAsRead();
+                            }
+                            
+                            // Show modal with booking details if there are unread booking notifications
+                            if (unreadNotifications.isNotEmpty) {
+                              _showBookingNotificationsModal(unreadNotifications);
+                            }
+                          },
                         ),
                       ),
                       if (unreadCount > 0)
@@ -964,11 +1002,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       case 0: return _buildDashboardTab();
       case 1: return _buildUsersTab();
       case 2: return _buildRoomsTab();
-      case 3: return _buildRoomBookingsTab();
-      case 4: return _buildEventBookingsTab();
-      case 5: return _buildGuestRequestsTab();
-      case 6: return _buildAuditTrailTab();
-      case 7: return _buildSystemTab();
+      case 3: return _buildCottagesTab();
+      case 4: return _buildRoomBookingsTab();
+      case 5: return _buildCottageBookingsTab();
+      case 6: return _buildEventBookingsTab();
+      case 7: return _buildGuestRequestsTab();
+      case 8: return _buildAuditTrailTab();
+      case 9: return _buildSystemTab();
       default: return _buildDashboardTab();
     }
   }
@@ -1730,6 +1770,487 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCottagesTab() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cottage Management',
+                          style: TextStyle(
+                            fontSize: isMobile ? 24 : 28,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey.shade900,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage cottages and availability',
+                          style: TextStyle(
+                            fontSize: isMobile ? 14 : 15,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isMobile)
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF48BB78).withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _showCreateCottageDialog(),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.add, color: Colors.white, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Add Cottage',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (isMobile) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF48BB78).withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showCreateCottageDialog(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Add Cottage',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              StreamBuilder<List<Cottage>>(
+                stream: _cottageService.streamAllCottagesForAdmin(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    debugPrint('Error loading cottages: ${snapshot.error}');
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          children: [
+                            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error loading cottages',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${snapshot.error}',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.grey));
+                  }
+
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.grey));
+                  }
+
+                  final cottages = snapshot.data ?? [];
+
+                  if (cottages.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          children: [
+                            Icon(Icons.home_outlined, size: 64, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No cottages found',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Click "Add Cottage" to create your first cottage',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: cottages.length,
+                    itemBuilder: (context, index) {
+                      final cottage = cottages[index];
+                      return _buildCottageCard(cottage, isMobile: isMobile);
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCottageCard(Cottage cottage, {bool isMobile = false}) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isMobile ? 12 : 16),
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: isMobile ? 120 : 150,
+                height: isMobile ? 120 : 150,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: cottage.imageUrl.isNotEmpty
+                      ? CottageImageWidget(
+                          imageUrl: cottage.imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorWidget: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: cottage.isAvailable
+                                  ? const LinearGradient(colors: [Color(0xFF48BB78), Color(0xFF38A169)])
+                                  : const LinearGradient(colors: [Color(0xFF718096), Color(0xFF4A5568)]),
+                            ),
+                            child: Icon(
+                              Icons.home_rounded,
+                              size: isMobile ? 40 : 50,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          decoration: BoxDecoration(
+                            gradient: cottage.isAvailable
+                                ? const LinearGradient(colors: [Color(0xFF48BB78), Color(0xFF38A169)])
+                                : const LinearGradient(colors: [Color(0xFF718096), Color(0xFF4A5568)]),
+                          ),
+                          child: Icon(
+                            Icons.home_rounded,
+                            size: isMobile ? 40 : 50,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                ),
+              ),
+              SizedBox(width: isMobile ? 12 : 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            cottage.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: isMobile ? 16 : 18,
+                              color: const Color(0xFF1F2937),
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () async {
+                            if (_currentUser == null) return;
+                            try {
+                              await _cottageService.updateCottageAvailability(
+                                cottageId: cottage.id,
+                                isAvailable: !cottage.isAvailable,
+                                userId: _currentUser!.id,
+                              );
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      cottage.isAvailable
+                                          ? 'Cottage marked as unavailable'
+                                          : 'Cottage marked as available',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: cottage.isAvailable
+                                  ? const Color(0xFF48BB78).withOpacity(0.1)
+                                  : const Color(0xFF718096).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: cottage.isAvailable
+                                    ? const Color(0xFF48BB78)
+                                    : const Color(0xFF718096),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  cottage.isAvailable ? 'Available' : 'Not Available',
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 11 : 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: cottage.isAvailable
+                                        ? const Color(0xFF48BB78)
+                                        : const Color(0xFF718096),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  cottage.isAvailable ? Icons.check_circle : Icons.cancel,
+                                  size: 14,
+                                  color: cottage.isAvailable
+                                      ? const Color(0xFF48BB78)
+                                      : const Color(0xFF718096),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      cottage.description,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: isMobile ? 13 : 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 12 : 16),
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.people_outline, size: 16, color: Colors.grey.shade500),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${cottage.capacity} guests',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: isMobile ? 13 : 14,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.attach_money, size: 16, color: Colors.grey.shade500),
+                    const SizedBox(width: 6),
+                    Text(
+                      '₱${cottage.price.toStringAsFixed(0)}/night',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: isMobile ? 13 : 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showEditCottageDialog(cottage),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Edit',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showDeleteCottageDialog(cottage),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.delete_rounded, color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -2759,6 +3280,488 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildCottageBookingsTab() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Cottage Bookings',
+                style: TextStyle(
+                  fontSize: isMobile ? 24 : 28,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Manage and review all cottage reservations',
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 15,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.filter_list_rounded, color: Colors.grey.shade600, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Filter bookings by status or date',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF48BB78).withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.download_rounded, color: Colors.white, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            'Export',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              StreamBuilder<List<Booking>>(
+                stream: _cottageBookingService.getAllCottageBookingsForAdmin(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(48),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Colors.grey),
+                      ),
+                    );
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(48),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error loading cottage bookings',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  final bookings = snapshot.data ?? [];
+                  
+                  if (bookings.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(48),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.home_outlined, size: 64, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No cottage bookings found',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Cottage bookings will appear here when users make reservations',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: bookings.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final booking = bookings[index];
+                      final status = booking.status;
+                      final isPending = status == BookingStatus.pending;
+                      
+                      return Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(isMobile ? 16 : 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey.shade100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 15,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: isMobile ? 48 : 60,
+                                  height: isMobile ? 48 : 60,
+                                  decoration: BoxDecoration(
+                                    gradient: status == BookingStatus.confirmed
+                                        ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                        : status == BookingStatus.rejected
+                                            ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                            : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    status == BookingStatus.confirmed
+                                        ? Icons.check_circle
+                                        : status == BookingStatus.rejected
+                                            ? Icons.cancel
+                                            : Icons.pending,
+                                    color: Colors.white,
+                                    size: isMobile ? 22 : 28,
+                                  ),
+                                ),
+                                SizedBox(width: isMobile ? 12 : 20),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        booking.roomName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: isMobile ? 15 : 17,
+                                          color: const Color(0xFF1F2937),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              'Guest: ${booking.userId}',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: isMobile ? 13 : 14,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              '${DateFormat('MMM dd, yyyy').format(booking.checkIn)} (1 day)',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: isMobile ? 13 : 14,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.people, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '${booking.guests} guest${booking.guests == 1 ? '' : 's'}',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: isMobile ? 13 : 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: status == BookingStatus.confirmed
+                                            ? const Color(0xFF38B2AC).withOpacity(0.1)
+                                            : status == BookingStatus.rejected
+                                                ? const Color(0xFFF56565).withOpacity(0.1)
+                                                : const Color(0xFFED8936).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        status.name.toUpperCase(),
+                                        style: TextStyle(
+                                          color: status == BookingStatus.confirmed
+                                              ? const Color(0xFF38B2AC)
+                                              : status == BookingStatus.rejected
+                                                  ? const Color(0xFFF56565)
+                                                  : const Color(0xFFED8936),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '₱${booking.total.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: isMobile ? 14 : 16,
+                                        color: Colors.grey.shade900,
+                                      ),
+                                    ),
+                                    if (isMobile) const SizedBox(height: 12),
+                                    if (isPending)
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              gradient: const LinearGradient(
+                                                colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                                              ),
+                                              borderRadius: BorderRadius.circular(12),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFF48BB78).withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(Icons.check, color: Colors.white, size: isMobile ? 18 : 20),
+                                              tooltip: 'Accept',
+                                              onPressed: () async {
+                                                if (_currentUser == null) return;
+                                                try {
+                                                  await _cottageBookingService.acceptCottageBooking(
+                                                    bookingId: booking.id,
+                                                    callerUserId: _currentUser!.id,
+                                                    checkConflicts: true,
+                                                  );
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: const Text('Cottage booking accepted'),
+                                                        backgroundColor: Colors.green,
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      ),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  if (mounted) {
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (context) => AlertDialog(
+                                                        title: const Text('Error'),
+                                                        content: Text(e.toString()),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                          ),
+                                                          if (e.toString().contains('Conflict'))
+                                                            TextButton(
+                                                              onPressed: () async {
+                                                                Navigator.pop(context);
+                                                                try {
+                                                                  await _cottageBookingService.acceptCottageBooking(
+                                                                    bookingId: booking.id,
+                                                                    callerUserId: _currentUser!.id,
+                                                                    checkConflicts: false,
+                                                                  );
+                                                                  if (mounted) {
+                                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                                      const SnackBar(
+                                                                        content: Text('Cottage booking accepted (conflicts ignored)'),
+                                                                        backgroundColor: Colors.orange,
+                                                                      ),
+                                                                    );
+                                                                  }
+                                                                } catch (e2) {
+                                                                  if (mounted) {
+                                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                                      SnackBar(
+                                                                        content: Text('Error: ${e2.toString()}'),
+                                                                        backgroundColor: Colors.red,
+                                                                      ),
+                                                                    );
+                                                                  }
+                                                                }
+                                                              },
+                                                              child: const Text('Accept Anyway'),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              gradient: const LinearGradient(
+                                                colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                                              ),
+                                              borderRadius: BorderRadius.circular(12),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFFF56565).withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(Icons.close, color: Colors.white, size: isMobile ? 18 : 20),
+                                              tooltip: 'Reject',
+                                              onPressed: () async {
+                                                if (_currentUser == null) return;
+                                                final reason = await showDialog<String>(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    final controller = TextEditingController();
+                                                    return AlertDialog(
+                                                      title: const Text('Reject Cottage Booking'),
+                                                      content: TextField(
+                                                        controller: controller,
+                                                        decoration: const InputDecoration(
+                                                          labelText: 'Reason (optional)',
+                                                          hintText: 'Enter rejection reason...',
+                                                          border: OutlineInputBorder(),
+                                                        ),
+                                                        maxLines: 3,
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () => Navigator.pop(context),
+                                                          child: const Text('Cancel'),
+                                                        ),
+                                                        ElevatedButton(
+                                                          onPressed: () => Navigator.pop(context, controller.text),
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: const Color(0xFFF56565),
+                                                          ),
+                                                          child: const Text('Reject'),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
+                                                try {
+                                                  await _cottageBookingService.rejectCottageBooking(
+                                                    bookingId: booking.id,
+                                                    callerUserId: _currentUser!.id,
+                                                    reason: reason,
+                                                  );
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Cottage booking rejected'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text('Error: ${e.toString()}'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -5687,6 +6690,1644 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ),
       ),
+    );
+  }
+
+  void _showCreateCottageDialog() {
+    if (_currentUser == null) return;
+
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final capacityController = TextEditingController(text: '2');
+    File? selectedImage;
+    bool isUploading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Create New Cottage',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Cottage Image Section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Cottage Image',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: selectedImage != null
+                                  ? (kIsWeb || 
+                                      selectedImage!.path.startsWith('blob:') || 
+                                      selectedImage!.path.startsWith('http://') || 
+                                      selectedImage!.path.startsWith('https://')
+                                      ? Image.network(
+                                          selectedImage!.path,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Center(
+                                                child: CircularProgressIndicator(),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Image.file(
+                                          selectedImage!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                        ))
+                                  : Container(
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(Icons.home_rounded, size: 40),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: isUploading
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final ImagePicker picker = ImagePicker();
+                                            final XFile? image = await picker.pickImage(
+                                              source: ImageSource.gallery,
+                                              imageQuality: 85,
+                                            );
+                                            if (image != null) {
+                                              if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
+                                                setDialogState(() {
+                                                  selectedImage = File(image.path);
+                                                });
+                                              } else {
+                                                try {
+                                                  final file = File(image.path);
+                                                  setDialogState(() {
+                                                    selectedImage = file;
+                                                  });
+                                                } catch (e) {
+                                                  setDialogState(() {
+                                                    selectedImage = File(image.path);
+                                                  });
+                                                }
+                                              }
+                                            }
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error: ${e.toString()}'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  icon: const Icon(Icons.image_rounded),
+                                  label: const Text('Select Image'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cottage Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: priceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Price per Day',
+                            border: OutlineInputBorder(),
+                            prefixText: '₱',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: capacityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Capacity',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: isUploading
+                            ? null
+                            : () async {
+                                if (nameController.text.isEmpty ||
+                                    priceController.text.isEmpty ||
+                                    capacityController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please fill in all required fields'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (selectedImage == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please select an image'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setDialogState(() {
+                                  isUploading = true;
+                                });
+
+                                try {
+                                  String imageUrl = '';
+                                  if (selectedImage != null) {
+                                    imageUrl = await _cottageService.uploadCottageImage(
+                                      selectedImage!,
+                                      '',
+                                    );
+                                  }
+
+                                  await _cottageService.createCottage(
+                                    name: nameController.text,
+                                    description: '', // Empty description
+                                    price: double.parse(priceController.text),
+                                    capacity: int.parse(capacityController.text),
+                                    amenities: const [], // Empty amenities
+                                    imageUrl: imageUrl,
+                                    isAvailable: true, // Always available by default
+                                    userId: _currentUser!.id,
+                                  );
+
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Cottage created successfully'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (context.mounted) {
+                                    setDialogState(() {
+                                      isUploading = false;
+                                    });
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF48BB78),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: isUploading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Create Cottage'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditCottageDialog(Cottage cottage) {
+    if (_currentUser == null) return;
+
+    final nameController = TextEditingController(text: cottage.name);
+    final priceController = TextEditingController(text: cottage.price.toStringAsFixed(2));
+    final capacityController = TextEditingController(text: cottage.capacity.toString());
+    bool isAvailable = cottage.isAvailable;
+    File? selectedImage;
+    bool isUploading = false;
+    bool clearImage = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Edit Cottage: ${cottage.name}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Cottage Image Section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Cottage Image',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: selectedImage != null
+                                  ? (kIsWeb || selectedImage!.path.startsWith('blob:')
+                                      ? Image.network(
+                                          selectedImage!.path,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                        )
+                                      : Image.file(
+                                          selectedImage!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                        ))
+                                  : (cottage.imageUrl.isNotEmpty && !clearImage
+                                      ? CottageImageWidget(
+                                          imageUrl: cottage.imageUrl,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          color: Colors.grey.shade200,
+                                          child: const Icon(Icons.home_rounded, size: 40),
+                                        )),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: isUploading
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final ImagePicker picker = ImagePicker();
+                                            final XFile? image = await picker.pickImage(
+                                              source: ImageSource.gallery,
+                                              imageQuality: 85,
+                                            );
+                                            if (image != null) {
+                                              if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
+                                                setDialogState(() {
+                                                  selectedImage = File(image.path);
+                                                  clearImage = false;
+                                                });
+                                              } else {
+                                                try {
+                                                  final file = File(image.path);
+                                                  setDialogState(() {
+                                                    selectedImage = file;
+                                                    clearImage = false;
+                                                  });
+                                                } catch (e) {
+                                                  setDialogState(() {
+                                                    selectedImage = File(image.path);
+                                                    clearImage = false;
+                                                  });
+                                                }
+                                              }
+                                            }
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error: ${e.toString()}'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  icon: const Icon(Icons.image_rounded),
+                                  label: const Text('Change Image'),
+                                ),
+                                if (cottage.imageUrl.isNotEmpty)
+                                  TextButton(
+                                    onPressed: () {
+                                      setDialogState(() {
+                                        clearImage = true;
+                                        selectedImage = null;
+                                      });
+                                    },
+                                    child: const Text('Remove Image'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cottage Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: priceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Price per Day',
+                            border: OutlineInputBorder(),
+                            prefixText: '₱',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: capacityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Capacity',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Available:'),
+                      const SizedBox(width: 16),
+                      Switch(
+                        value: isAvailable,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            isAvailable = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: isUploading
+                            ? null
+                            : () async {
+                                if (nameController.text.isEmpty ||
+                                    priceController.text.isEmpty ||
+                                    capacityController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please fill in all required fields'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setDialogState(() {
+                                  isUploading = true;
+                                });
+
+                                try {
+                                  String? imageUrl;
+                                  if (selectedImage != null) {
+                                    imageUrl = await _cottageService.uploadCottageImage(
+                                      selectedImage!,
+                                      cottage.id,
+                                    );
+                                  } else if (clearImage) {
+                                    imageUrl = '';
+                                  }
+
+                                  await _cottageService.updateCottage(
+                                    cottageId: cottage.id,
+                                    name: nameController.text,
+                                    description: cottage.description, // Keep existing description
+                                    price: double.parse(priceController.text),
+                                    capacity: int.parse(capacityController.text),
+                                    amenities: cottage.amenities, // Keep existing amenities
+                                    imageUrl: imageUrl,
+                                    isAvailable: isAvailable,
+                                    userId: _currentUser!.id,
+                                  );
+
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Cottage updated successfully'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (context.mounted) {
+                                    setDialogState(() {
+                                      isUploading = false;
+                                    });
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF48BB78),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: isUploading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Update Cottage'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteCottageDialog(Cottage cottage) {
+    if (_currentUser == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.delete_rounded, color: Colors.white, size: 36),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Delete Cottage',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to delete "${cottage.name}"?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This action cannot be undone.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await _cottageService.deleteCottage(
+                          cottageId: cottage.id,
+                          userId: _currentUser!.id,
+                        );
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Cottage deleted successfully'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: ${e.toString()}'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF56565),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBookingNotificationsModal(List<AdminNotification> notifications) {
+    if (_currentUser == null || notifications.isEmpty) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 600,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'New Booking${notifications.length > 1 ? 's' : ''}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: notifications.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final notification = notifications[index];
+                    return _buildBookingNotificationCard(notification);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookingNotificationCard(AdminNotification notification) {
+    // Handle event bookings
+    if (notification.type == AdminNotificationType.eventBookingCreated) {
+      return FutureBuilder<EventBooking?>(
+        future: notification.bookingId != null
+            ? _eventBookingService.getEventBookingById(notification.bookingId!)
+            : Future.value(null),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final eventBooking = snapshot.data;
+          if (eventBooking == null) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notification.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    notification.message,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final dateFormat = DateFormat('MMM dd, yyyy');
+          final isPending = eventBooking.status == EventBookingStatus.pending;
+
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF9F7AEA), Color(0xFF805AD5)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.event_rounded, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Event Booking',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            notification.userEmail ?? 'Unknown user',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildBookingDetailRow(
+                        icon: Icons.event,
+                        label: 'Event Type',
+                        value: Booking.getEventTypeDisplay(eventBooking.eventType),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildBookingDetailRow(
+                        icon: Icons.calendar_today,
+                        label: 'Event Date',
+                        value: dateFormat.format(eventBooking.eventDate),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildBookingDetailRow(
+                        icon: Icons.people,
+                        label: 'People',
+                        value: '${eventBooking.peopleCount}',
+                      ),
+                      if (eventBooking.notes != null && eventBooking.notes!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildBookingDetailRow(
+                          icon: Icons.note,
+                          label: 'Notes',
+                          value: eventBooking.notes!,
+                          isMultiline: true,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (isPending) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF48BB78).withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                if (_currentUser == null) return;
+                                try {
+                                  await _eventBookingService.acceptEventBooking(
+                                    bookingId: eventBooking.id,
+                                    callerUserId: _currentUser!.id,
+                                    checkConflicts: true,
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Event booking accepted successfully'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.check, color: Colors.white, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Accept',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFF56565).withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                if (_currentUser == null) return;
+                                final reason = await showDialog<String>(
+                                  context: context,
+                                  builder: (context) {
+                                    final controller = TextEditingController();
+                                    return AlertDialog(
+                                      title: const Text('Reject Event Booking'),
+                                      content: TextField(
+                                        controller: controller,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Reason (optional)',
+                                          hintText: 'Enter rejection reason...',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        maxLines: 3,
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, controller.text),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFF56565),
+                                          ),
+                                          child: const Text('Reject'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                try {
+                                  await _eventBookingService.rejectEventBooking(
+                                    bookingId: eventBooking.id,
+                                    callerUserId: _currentUser!.id,
+                                    reason: reason,
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Event booking rejected'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.close, color: Colors.white, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Reject',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: eventBooking.status == EventBookingStatus.confirmed
+                          ? const Color(0xFF48BB78).withOpacity(0.1)
+                          : const Color(0xFFF56565).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          eventBooking.status == EventBookingStatus.confirmed
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          color: eventBooking.status == EventBookingStatus.confirmed
+                              ? const Color(0xFF48BB78)
+                              : const Color(0xFFF56565),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          eventBooking.status.name.toUpperCase(),
+                          style: TextStyle(
+                            color: eventBooking.status == EventBookingStatus.confirmed
+                                ? const Color(0xFF48BB78)
+                                : const Color(0xFFF56565),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    // Handle room and cottage bookings - try cottage first, then room
+    return FutureBuilder<Booking?>(
+      future: notification.bookingId != null 
+          ? _cottageBookingService.getCottageBookingById(notification.bookingId!)
+              .then((cottageBooking) => cottageBooking)
+              .catchError((_) => _bookingService.getBookingById(notification.bookingId!))
+          : Future.value(null),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final booking = snapshot.data;
+        if (booking == null && notification.bookingId != null) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  notification.message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (booking == null) {
+          return const SizedBox.shrink();
+        }
+
+        final dateFormat = DateFormat('MMM dd, yyyy');
+        final isPending = booking.status == BookingStatus.pending;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.hotel_rounded, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          booking.roomName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          notification.userEmail ?? 'Unknown user',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildBookingDetailRow(
+                      icon: Icons.calendar_today,
+                      label: 'Check-in',
+                      value: dateFormat.format(booking.checkIn),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildBookingDetailRow(
+                      icon: Icons.calendar_today,
+                      label: 'Check-out',
+                      value: dateFormat.format(booking.checkOut),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildBookingDetailRow(
+                      icon: Icons.people,
+                      label: 'Guests',
+                      value: '${booking.guests}',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildBookingDetailRow(
+                      icon: Icons.attach_money,
+                      label: 'Total',
+                      value: '₱${booking.total.toStringAsFixed(2)}',
+                    ),
+                    if (booking.eventType != EventType.none) ...[
+                      const SizedBox(height: 8),
+                      _buildBookingDetailRow(
+                        icon: Icons.event,
+                        label: 'Event Type',
+                        value: Booking.getEventTypeDisplay(booking.eventType),
+                      ),
+                    ],
+                    if (booking.specialRequests != null && booking.specialRequests!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _buildBookingDetailRow(
+                        icon: Icons.note,
+                        label: 'Special Requests',
+                        value: booking.specialRequests!,
+                        isMultiline: true,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (isPending) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF48BB78).withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              if (_currentUser == null) return;
+                              try {
+                                // Check if it's a cottage booking by trying to get it from cottage service
+                                final cottageBooking = await _cottageBookingService.getCottageBookingById(booking.id);
+                                if (cottageBooking != null) {
+                                  await _cottageBookingService.acceptCottageBooking(
+                                    bookingId: booking.id,
+                                    callerUserId: _currentUser!.id,
+                                    checkConflicts: true,
+                                  );
+                                } else {
+                                  await _bookingService.acceptBooking(
+                                    bookingId: booking.id,
+                                    callerUserId: _currentUser!.id,
+                                    checkConflicts: true,
+                                  );
+                                }
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Booking accepted successfully'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.check, color: Colors.white, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Accept',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF56565).withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              if (_currentUser == null) return;
+                              final reason = await showDialog<String>(
+                                context: context,
+                                builder: (context) {
+                                  final controller = TextEditingController();
+                                  return AlertDialog(
+                                    title: const Text('Reject Booking'),
+                                    content: TextField(
+                                      controller: controller,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Reason (optional)',
+                                        hintText: 'Enter rejection reason...',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      maxLines: 3,
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, controller.text),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFF56565),
+                                        ),
+                                        child: const Text('Reject'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              try {
+                                // Check if it's a cottage booking by trying to get it from cottage service
+                                final cottageBooking = await _cottageBookingService.getCottageBookingById(booking.id);
+                                if (cottageBooking != null) {
+                                  await _cottageBookingService.rejectCottageBooking(
+                                    bookingId: booking.id,
+                                    callerUserId: _currentUser!.id,
+                                    reason: reason,
+                                  );
+                                } else {
+                                  await _bookingService.rejectBooking(
+                                    bookingId: booking.id,
+                                    callerUserId: _currentUser!.id,
+                                    reason: reason,
+                                  );
+                                }
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Booking rejected'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.close, color: Colors.white, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Reject',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: booking.status == BookingStatus.confirmed
+                        ? const Color(0xFF48BB78).withOpacity(0.1)
+                        : const Color(0xFFF56565).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        booking.status == BookingStatus.confirmed
+                            ? Icons.check_circle
+                            : Icons.cancel,
+                        color: booking.status == BookingStatus.confirmed
+                            ? const Color(0xFF48BB78)
+                            : const Color(0xFFF56565),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        booking.status.name.toUpperCase(),
+                        style: TextStyle(
+                          color: booking.status == BookingStatus.confirmed
+                              ? const Color(0xFF48BB78)
+                              : const Color(0xFFF56565),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBookingDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isMultiline = false,
+  }) {
+    return Row(
+      crossAxisAlignment: isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: isMultiline ? 3 : 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

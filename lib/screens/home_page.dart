@@ -13,7 +13,7 @@ import '../widgets/profile_image_widget.dart';
 import 'event_booking_page.dart';
 import 'login_page.dart';
 import 'room_detail_page.dart';
-import 'gallery_page.dart';
+import 'cottage_page.dart';
 import 'notifications_page.dart';
 import 'profile_page.dart';
 import 'admin_dashboard.dart';
@@ -1004,7 +1004,7 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return _buildHomeContent();
       case 1:
-        return const GalleryPage();
+        return const CottagePage();
       case 2:
         return NotificationsPage(
           onPageOpened: () {
@@ -1078,7 +1078,7 @@ class _HomePageState extends State<HomePage> {
                   color: _currentIndex == 1 ? AppTheme.primaryColor : AppTheme.textSecondary,
                 ),
               ),
-              label: 'Gallery',
+              label: 'Cottage',
             ),
             BottomNavigationBarItem(
               icon: StreamBuilder<int>(

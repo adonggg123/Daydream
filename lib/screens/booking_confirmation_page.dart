@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/room.dart';
 import '../models/booking.dart';
 import '../services/booking_service.dart';
+import '../services/cottage_booking_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
 import 'theme_constants.dart';
@@ -17,6 +18,7 @@ class BookingConfirmationPage extends StatefulWidget {
   final EventType eventType;
   final String? eventDetails;
   final String? specialRequests;
+  final bool isCottageBooking;
 
   const BookingConfirmationPage({
     super.key,
@@ -27,6 +29,7 @@ class BookingConfirmationPage extends StatefulWidget {
     required this.eventType,
     this.eventDetails,
     this.specialRequests,
+    this.isCottageBooking = false,
   });
 
   @override
@@ -35,6 +38,7 @@ class BookingConfirmationPage extends StatefulWidget {
 
 class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
   final BookingService _bookingService = BookingService();
+  final CottageBookingService _cottageBookingService = CottageBookingService();
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
   bool _isProcessing = false;
   late BookingCost _bookingCost;
@@ -46,10 +50,11 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
   @override
   void initState() {
     super.initState();
-    final numberOfNights = widget.checkOut.difference(widget.checkIn).inDays;
+    // For cottages, always 1 day; for rooms, calculate nights
+    final numberOfDays = widget.isCottageBooking ? 1 : widget.checkOut.difference(widget.checkIn).inDays;
     _bookingCost = PaymentService.calculateCost(
       roomPricePerNight: widget.room.price,
-      numberOfNights: numberOfNights,
+      numberOfNights: numberOfDays,
       eventType: widget.eventType,
       guests: widget.guests,
     );
@@ -129,30 +134,56 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
         final user = authService.currentUser;
         
         if (user != null) {
-          final bookingId = await _bookingService.createBooking(
-            userId: user.uid,
-            roomId: widget.room.id,
-            roomName: widget.room.name,
-            checkIn: widget.checkIn,
-            checkOut: widget.checkOut,
-            guests: widget.guests,
-            eventType: widget.eventType,
-            eventDetails: widget.eventDetails,
-            specialRequests: widget.specialRequests,
-            roomPrice: _bookingCost.roomCost,
-            eventFee: _bookingCost.eventFee,
-            subtotal: _bookingCost.subtotal,
-            tax: _bookingCost.tax,
-            discount: _bookingCost.discount,
-            total: _bookingCost.total,
-            paymentId: paymentResult.paymentId,
-            isPaid: true,
-          );
+          final String bookingId;
+          
+          if (widget.isCottageBooking) {
+            // Use cottage booking service for cottage bookings
+            bookingId = await _cottageBookingService.createCottageBooking(
+              userId: user.uid,
+              cottageId: widget.room.id,
+              cottageName: widget.room.name,
+              checkIn: widget.checkIn,
+              checkOut: widget.checkOut,
+              guests: widget.guests,
+              specialRequests: widget.specialRequests,
+              cottagePrice: _bookingCost.roomCost,
+              subtotal: _bookingCost.subtotal,
+              tax: _bookingCost.tax,
+              discount: _bookingCost.discount,
+              total: _bookingCost.total,
+              paymentId: paymentResult.paymentId,
+              isPaid: true,
+            );
+          } else {
+            // Use regular booking service for room bookings
+            bookingId = await _bookingService.createBooking(
+              userId: user.uid,
+              roomId: widget.room.id,
+              roomName: widget.room.name,
+              checkIn: widget.checkIn,
+              checkOut: widget.checkOut,
+              guests: widget.guests,
+              eventType: widget.eventType,
+              eventDetails: widget.eventDetails,
+              specialRequests: widget.specialRequests,
+              roomPrice: _bookingCost.roomCost,
+              eventFee: _bookingCost.eventFee,
+              subtotal: _bookingCost.subtotal,
+              tax: _bookingCost.tax,
+              discount: _bookingCost.discount,
+              total: _bookingCost.total,
+              paymentId: paymentResult.paymentId,
+              isPaid: true,
+            );
+          }
 
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => BookingSuccessPage(bookingId: bookingId),
+                builder: (context) => BookingSuccessPage(
+                  bookingId: bookingId,
+                  isCottageBooking: widget.isCottageBooking,
+                ),
               ),
             );
           }
@@ -187,7 +218,8 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final numberOfNights = widget.checkOut.difference(widget.checkIn).inDays;
+    // For cottages, always 1 day; for rooms, calculate nights
+    final numberOfDays = widget.isCottageBooking ? 1 : widget.checkOut.difference(widget.checkIn).inDays;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -280,8 +312,8 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                     children: [
                       _buildDetailChip(
                         icon: Icons.bed,
-                        label: 'Nights',
-                        value: '$numberOfNights',
+                        label: widget.isCottageBooking ? 'Days' : 'Nights',
+                        value: '$numberOfDays',
                       ),
                       const SizedBox(width: 12),
                       _buildDetailChip(
@@ -336,7 +368,9 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                   ),
                   const SizedBox(height: 20),
                   _buildCostItem(
-                    label: 'Room (${numberOfNights} nights)',
+                    label: widget.isCottageBooking 
+                        ? 'Cottage (${numberOfDays} day${numberOfDays == 1 ? '' : 's'})'
+                        : 'Room (${numberOfDays} night${numberOfDays == 1 ? '' : 's'})',
                     amount: _bookingCost.roomCost,
                     isBold: false,
                   ),
@@ -658,11 +692,13 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
 class BookingSuccessPage extends StatelessWidget {
   final String bookingId;
   final bool isEventBooking;
+  final bool isCottageBooking;
 
   const BookingSuccessPage({
     super.key,
     required this.bookingId,
     this.isEventBooking = false,
+    this.isCottageBooking = false,
   });
 
   @override
@@ -791,6 +827,12 @@ class BookingSuccessPage extends StatelessWidget {
                                     builder: (context) => MyEventBookingsPage(userId: userId),
                                   ),
                                 );
+                              } else if (isCottageBooking) {
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (context) => MyCottageBookingsPage(userId: userId),
+                                  ),
+                                );
                               } else {
                                 Navigator.of(context).pushReplacement(
                                   MaterialPageRoute(
@@ -801,7 +843,11 @@ class BookingSuccessPage extends StatelessWidget {
                             }
                           : null,
                       child: Text(
-                        isEventBooking ? 'View My Event Bookings' : 'View My Bookings',
+                        isEventBooking 
+                            ? 'View My Event Bookings' 
+                            : isCottageBooking 
+                                ? 'View My Cottage Bookings' 
+                                : 'View My Bookings',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.9),

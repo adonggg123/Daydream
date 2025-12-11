@@ -139,6 +139,20 @@ class EventBookingService {
     return bookings;
   }
 
+  // Get event booking by ID
+  Future<EventBooking?> getEventBookingById(String bookingId) async {
+    try {
+      final doc = await _firestore.collection(_collection).doc(bookingId).get();
+      if (!doc.exists) {
+        return null;
+      }
+      return EventBooking.fromSnapshot(doc);
+    } catch (e) {
+      debugPrint('Error getting event booking by ID: $e');
+      return null;
+    }
+  }
+
   // Accept an event booking (admin action)
   Future<void> acceptEventBooking({
     required String bookingId,
