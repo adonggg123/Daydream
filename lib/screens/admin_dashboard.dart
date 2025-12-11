@@ -246,15 +246,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
-              ),
+              color: Colors.white,
               border: Border(
                 bottom: BorderSide(color: Colors.grey.shade100, width: 1),
               ),
@@ -405,7 +397,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     gradient: LinearGradient(
                       colors: [
                         Colors.transparent,
-                        Colors.grey.shade200,
+                        Colors.grey.shade300,
                         Colors.transparent,
                       ],
                     ),
@@ -482,29 +474,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _animationController.forward();
           },
           borderRadius: BorderRadius.circular(16),
-          child: Container(
+            child: Container(
             constraints: const BoxConstraints(minHeight: 52),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              gradient: isSelected ? gradient : null,
               borderRadius: BorderRadius.circular(16),
-              border: isSelected ? null : Border.all(
-                color: Colors.grey.shade200,
-                width: 1,
-              ),
-              boxShadow: isSelected ? [
-                BoxShadow(
-                  color: gradient.colors.first.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 4),
-                ),
-              ] : null,
             ),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  color: isSelected ? const Color(0xFF38A169) : Colors.black87,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -512,7 +492,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   child: Text(
                     label,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                      color: isSelected ? const Color(0xFF38A169) : Colors.black87,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       fontSize: 14,
                       letterSpacing: -0.2,
@@ -525,7 +505,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     width: 6,
                     height: 6,
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: Color(0xFF38A169),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1168,16 +1148,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
         return SizedBox(
           height: 150,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: stats.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 20),
-            itemBuilder: (context, index) {
-              return SizedBox(
-                width: MediaQuery.of(context).size.width * 0.22,
-                child: _buildStatCard(stats[index], isMobile: false),
-              );
-            },
+          child: Row(
+            children: [
+              Expanded(child: _buildStatCard(stats[0], isMobile: false)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(stats[1], isMobile: false)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(stats[2], isMobile: false)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(stats[3], isMobile: false)),
+            ],
           ),
         );
       },

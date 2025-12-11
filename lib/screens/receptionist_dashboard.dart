@@ -394,25 +394,13 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
             constraints: const BoxConstraints(minHeight: 52),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              gradient: isSelected ? gradient : null,
               borderRadius: BorderRadius.circular(16),
-              border: isSelected ? null : Border.all(
-                color: Colors.grey.shade200,
-                width: 1,
-              ),
-              boxShadow: isSelected ? [
-                BoxShadow(
-                  color: gradient.colors.first.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 4),
-                ),
-              ] : null,
             ),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  color: isSelected ? const Color(0xFF4B5320) : Colors.black87,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -420,7 +408,7 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
                   child: Text(
                     label,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                      color: isSelected ? const Color(0xFF4B5320) : Colors.black87,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       fontSize: 14,
                       letterSpacing: -0.2,
@@ -433,7 +421,7 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
                     width: 6,
                     height: 6,
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: Color(0xFF4B5320),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -895,16 +883,16 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
 
         return SizedBox(
           height: 150,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: stats.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 20),
-            itemBuilder: (context, index) {
-              return SizedBox(
-                width: MediaQuery.of(context).size.width * 0.22,
-                child: _buildStatCard(title: stats[index].title, value: stats[index].value, icon: stats[index].icon, gradient: stats[index].gradient, isMobile: false),
-              );
-            },
+          child: Row(
+            children: [
+              Expanded(child: _buildStatCard(title: stats[0].title, value: stats[0].value, icon: stats[0].icon, gradient: stats[0].gradient, isMobile: false)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(title: stats[1].title, value: stats[1].value, icon: stats[1].icon, gradient: stats[1].gradient, isMobile: false)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(title: stats[2].title, value: stats[2].value, icon: stats[2].icon, gradient: stats[2].gradient, isMobile: false)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(title: stats[3].title, value: stats[3].value, icon: stats[3].icon, gradient: stats[3].gradient, isMobile: false)),
+            ],
           ),
         );
       },
