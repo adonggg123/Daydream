@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/room.dart';
 import '../widgets/enhanced_booking_form.dart';
+import '../widgets/room_image_widget.dart';
 import 'theme_constants.dart';
 
 class RoomDetailPage extends StatelessWidget {
@@ -26,23 +27,21 @@ class RoomDetailPage extends StatelessWidget {
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               background: room.imageUrl.isNotEmpty
-                  ? Image.network(
-                      room.imageUrl,
+                  ? RoomImageWidget(
+                      imageUrl: room.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.primaryGradient,
+                      errorWidget: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.primaryGradient,
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.hotel,
+                            size: 100,
+                            color: Colors.white.withOpacity(0.3),
                           ),
-                          child: Center(
-                            child: Icon(
-                              Icons.hotel,
-                              size: 100,
-                              color: Colors.white.withOpacity(0.3),
-                            ),
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     )
                   : Container(
                       decoration: BoxDecoration(

@@ -8,6 +8,8 @@ import '../services/notification_service.dart';
 import '../models/user.dart';
 import '../models/room.dart';
 import '../widgets/social_feed.dart';
+import '../widgets/room_image_widget.dart';
+import '../widgets/profile_image_widget.dart';
 import 'event_booking_page.dart';
 import 'login_page.dart';
 import 'room_detail_page.dart';
@@ -31,9 +33,6 @@ class _HomePageState extends State<HomePage> {
   final NotificationService _notificationService = NotificationService();
   final TextEditingController _searchController = TextEditingController();
   
-  List<Room> _rooms = [];
-  List<Room> _filteredRooms = [];
-  bool _isLoading = true;
   int _currentIndex = 0;
   AppUser? _currentUserProfile;
 
@@ -60,7 +59,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadRooms();
     _loadUserProfile();
     _searchController.addListener(_filterRooms);
   }
@@ -72,17 +70,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _filterRooms() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredRooms = _rooms;
-      } else {
-        _filteredRooms = _rooms.where((room) {
-          return room.name.toLowerCase().contains(query) ||
-              room.description.toLowerCase().contains(query);
-        }).toList();
-      }
-    });
+    // Filtering is now handled in the StreamBuilder
+    // This listener is kept for compatibility but filtering happens in real-time
+  }
+
+  List<Room> _applySearchFilter(List<Room> rooms, String query) {
+    if (query.isEmpty) {
+      return rooms;
+    }
+    final lowerQuery = query.toLowerCase();
+    return rooms.where((room) {
+      return room.name.toLowerCase().contains(lowerQuery) ||
+          room.description.toLowerCase().contains(lowerQuery);
+    }).toList();
   }
 
   void _loadUserProfile() {
@@ -99,8 +99,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadRooms() async {
-    if (!mounted) return;
-    
+    // This method is kept for RefreshIndicator compatibility
+    // Real-time updates are handled by StreamBuilder
     try {
       await _bookingService.forceInitializeRooms()
           .timeout(
@@ -109,61 +109,8 @@ class _HomePageState extends State<HomePage> {
               debugPrint('Timeout initializing rooms');
             },
           );
-      
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      final rooms = await _bookingService.getAllRoomsForAdmin()
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              debugPrint('Timeout loading rooms');
-              return <Room>[];
-            },
-          );
-      
-      debugPrint('Loaded ${rooms.length} rooms');
-      
-      if (mounted) {
-        setState(() {
-          _rooms = rooms;
-          _filteredRooms = rooms;
-          _isLoading = false;
-        });
-      }
-    } on TimeoutException {
-      debugPrint('Timeout loading rooms');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _rooms = [];
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Request timed out. Please check your internet connection.'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      debugPrint('Error loading rooms: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _rooms = [];
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading rooms: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
+    } catch (e) {
+      debugPrint('Error initializing rooms: $e');
     }
   }
 
@@ -446,15 +393,11 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                       ],
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        userInitial,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
+                                    child: ProfileImageWidget(
+                                      imageUrl: _currentUserProfile?.photoUrl,
+                                      size: 40,
+                                      fallbackText: userInitial,
+                                      backgroundColor: Colors.transparent,
                                     ),
                                   ),
                                   color: Colors.white,
@@ -587,57 +530,104 @@ class _HomePageState extends State<HomePage> {
           ),
         ];
       },
-      body: _isLoading
-          ? const Center(
+      body: StreamBuilder<List<Room>>(
+        stream: _bookingService.streamAllRooms(),
+        builder: (context, snapshot) {
+          // Handle loading state
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            return const Center(
               child: CircularProgressIndicator(),
-            )
-          : RefreshIndicator(
+            );
+          }
+
+          // Handle error state
+          if (snapshot.hasError) {
+            return RefreshIndicator(
               onRefresh: _loadRooms,
               child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
+                  SliverFillRemaining(
+                    child: Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Quick Stats
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
+                          Icon(Icons.error_outline, size: 64, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error loading rooms',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${snapshot.error}',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Get rooms from stream
+          final rooms = snapshot.data ?? [];
+          final filteredRooms = _applySearchFilter(rooms, _searchController.text);
+
+          return RefreshIndicator(
+            onRefresh: _loadRooms,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Quick Stats
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Available Rooms',
+                                      style: AppTheme.bodyMedium.copyWith(
+                                        color: AppTheme.textSecondary,
                                       ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Available Rooms',
-                                        style: AppTheme.bodyMedium.copyWith(
-                                          color: AppTheme.textSecondary,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${rooms.where((r) => r.isAvailable).length}',
+                                      style: AppTheme.heading2.copyWith(
+                                        color: AppTheme.primaryColor,
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${_rooms.where((r) => r.isAvailable).length}',
-                                        style: AppTheme.heading2.copyWith(
-                                          color: AppTheme.primaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                            ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Container(
@@ -664,7 +654,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        '${_rooms.length}',
+                                        '${rooms.length}',
                                         style: AppTheme.heading2.copyWith(
                                           color: AppTheme.primaryColor,
                                         ),
@@ -815,7 +805,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                  _filteredRooms.isEmpty
+                  filteredRooms.isEmpty
                       ? SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.all(40),
@@ -857,7 +847,7 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Text(
                                       _searchController.text.isNotEmpty
-                                          ? 'Search Results (${_filteredRooms.length})'
+                                          ? 'Search Results (${filteredRooms.length})'
                                           : 'Featured Rooms',
                                       style: AppTheme.heading2,
                                     ),
@@ -876,7 +866,7 @@ class _HomePageState extends State<HomePage> {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            '${_filteredRooms.where((r) => r.isAvailable).length} Available',
+                                            '${filteredRooms.where((r) => r.isAvailable).length} Available',
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
@@ -894,9 +884,9 @@ class _HomePageState extends State<HomePage> {
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  itemCount: _filteredRooms.length,
+                                  itemCount: filteredRooms.length,
                                   itemBuilder: (context, index) {
-                                    final room = _filteredRooms[index];
+                                    final room = filteredRooms[index];
                                     return Container(
                                       width: 280,
                                       margin: const EdgeInsets.only(right: 16),
@@ -1003,7 +993,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-            ),
+            );
+        },
+      ),
     );
   }
 
@@ -1368,20 +1360,18 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(20),
                               ),
-                              child: Image.network(
-                                room.imageUrl,
+                              child: RoomImageWidget(
+                                imageUrl: room.imageUrl,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 height: 200,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Center(
-                                    child: Icon(
-                                      Icons.hotel,
-                                      size: 50,
-                                      color: AppTheme.primaryColor.withOpacity(0.3),
-                                    ),
-                                  );
-                                },
+                                errorWidget: Center(
+                                  child: Icon(
+                                    Icons.hotel,
+                                    size: 50,
+                                    color: AppTheme.primaryColor.withOpacity(0.3),
+                                  ),
+                                ),
                               ),
                             )
                           : Center(

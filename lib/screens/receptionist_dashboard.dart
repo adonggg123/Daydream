@@ -8,6 +8,7 @@ import '../services/notification_service.dart';
 import '../services/role_based_access_control.dart';
 import '../models/user.dart';
 import '../models/room.dart';
+import '../widgets/profile_image_widget.dart';
 import 'login_page.dart';
 
 class ReceptionistDashboard extends StatefulWidget {
@@ -604,17 +605,15 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> with Sing
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Center(
-                    child: Text(
-                      _currentUser?.displayName?.isNotEmpty == true
-                          ? _currentUser!.displayName![0].toUpperCase()
-                          : 'R',
-                      style: const TextStyle(
-                        color: Color(0xFF5A67D8),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
+                  child: ProfileImageWidget(
+                    imageUrl: _currentUser?.photoUrl,
+                    size: 44,
+                    fallbackText: _currentUser?.displayName?.isNotEmpty == true
+                        ? _currentUser!.displayName![0]
+                        : (_currentUser?.email.isNotEmpty == true
+                            ? _currentUser!.email[0]
+                            : 'R'),
+                    backgroundColor: Colors.white,
                   ),
                 ),
               ),

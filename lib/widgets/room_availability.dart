@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/room.dart';
 import '../widgets/enhanced_booking_form.dart';
+import '../widgets/room_image_widget.dart';
 
 class RoomAvailability extends StatelessWidget {
   final List<Room> rooms;
@@ -112,16 +113,14 @@ class RoomAvailability extends StatelessWidget {
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(16),
                             ),
-                            child: Image.network(
-                              room.imageUrl,
+                            child: RoomImageWidget(
+                              imageUrl: room.imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.hotel,
-                                  size: 64,
-                                  color: Colors.purple.shade300,
-                                );
-                              },
+                              errorWidget: Icon(
+                                Icons.hotel,
+                                size: 64,
+                                color: Colors.purple.shade300,
+                              ),
                             ),
                           )
                         : Center(

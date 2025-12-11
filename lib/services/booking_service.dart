@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import '../models/room.dart';
 import '../models/booking.dart';
 import 'audit_trail_service.dart';
@@ -18,32 +21,88 @@ class BookingService {
   final UserService _userService = UserService();
   final NotificationService _notificationService = NotificationService();
 
-  // Upload image to Firebase Storage
+  // Convert image file to Base64 string (supports web/desktop blob URLs and regular files)
   Future<String> uploadRoomImage(File imageFile, String roomId) async {
     try {
-      final String fileName = 'rooms/$roomId/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final Reference ref = _storage.ref().child(fileName);
+      Uint8List bytes;
       
-      final UploadTask uploadTask = ref.putFile(imageFile);
-      final TaskSnapshot snapshot = await uploadTask;
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      // Handle web/desktop blob URLs and HTTP URLs
+      if (kIsWeb || 
+          imageFile.path.startsWith('blob:') || 
+          imageFile.path.startsWith('http://') || 
+          imageFile.path.startsWith('https://')) {
+        // For web/desktop, read bytes from blob/HTTP URL using http
+        try {
+          final response = await http.get(Uri.parse(imageFile.path)).timeout(
+            const Duration(seconds: 10),
+          );
+          
+          if (response.statusCode != 200) {
+            throw Exception('Failed to read URL: ${response.statusCode}');
+          }
+          
+          bytes = response.bodyBytes;
+        } catch (e) {
+          debugPrint('Error fetching image from URL: $e');
+          rethrow;
+        }
+      } else {
+        // For mobile/desktop with file paths, read file normally
+        try {
+          bytes = await imageFile.readAsBytes();
+        } catch (e) {
+          // If readAsBytes fails, try reading as a file that might not exist yet
+          debugPrint('Error reading file bytes: $e');
+          debugPrint('File path: ${imageFile.path}');
+          
+          // Try to read the file even if it doesn't "exist" (might be a temp file)
+          try {
+            bytes = await imageFile.readAsBytes();
+          } catch (e2) {
+            debugPrint('Second attempt to read file also failed: $e2');
+            rethrow;
+          }
+        }
+      }
       
-      return downloadUrl;
+      // Convert to Base64 string
+      final base64String = base64Encode(bytes);
+      
+      // Determine image format from file extension or default to jpeg
+      String imageFormat = 'jpeg';
+      final fileName = imageFile.path.toLowerCase();
+      if (fileName.endsWith('.png') || fileName.contains('.png')) {
+        imageFormat = 'png';
+      } else if (fileName.endsWith('.gif') || fileName.contains('.gif')) {
+        imageFormat = 'gif';
+      } else if (fileName.endsWith('.webp') || fileName.contains('.webp')) {
+        imageFormat = 'webp';
+      }
+      
+      // Return Base64 data URI format: data:image/jpeg;base64,<base64string>
+      return 'data:image/$imageFormat;base64,$base64String';
     } catch (e) {
-      debugPrint('Error uploading image: $e');
+      debugPrint('Error converting image to Base64: $e');
+      debugPrint('Image file path: ${imageFile.path}');
       rethrow;
     }
   }
 
-  // Delete image from Firebase Storage
+  // Delete image - No-op for Base64 since images are stored in Firestore
+  // Kept for backward compatibility with existing code
   Future<void> deleteRoomImage(String imageUrl) async {
     try {
-      if (imageUrl.isEmpty || !imageUrl.contains('firebasestorage')) {
-        return; // Not a Firebase Storage URL, skip deletion
+      // Base64 images are stored in Firestore, so no deletion needed
+      // Only delete from Firebase Storage if it's a Firebase Storage URL
+      if (imageUrl.isEmpty || imageUrl.startsWith('data:image')) {
+        return; // Base64 image or empty, skip deletion
       }
       
-      final Reference ref = _storage.refFromURL(imageUrl);
-      await ref.delete();
+      // Only attempt deletion if it's a Firebase Storage URL
+      if (imageUrl.contains('firebasestorage')) {
+        final Reference ref = _storage.refFromURL(imageUrl);
+        await ref.delete();
+      }
     } catch (e) {
       debugPrint('Error deleting image: $e');
       // Don't throw - image deletion failure shouldn't block room operations
@@ -83,6 +142,30 @@ class BookingService {
       return rooms;
     }).handleError((error) {
       debugPrint('Error in streamAllRoomsForAdmin: $error');
+      // Return empty list on error instead of crashing
+      return <Room>[];
+    });
+  }
+
+  // Stream all available rooms for regular users (real-time updates)
+  Stream<List<Room>> streamAllRooms() {
+    return _firestore.collection(_roomsCollection).snapshots().map((snapshot) {
+      final rooms = <Room>[];
+      for (final doc in snapshot.docs) {
+        try {
+          final room = Room.fromMap(doc.id, doc.data());
+          // Only include available rooms for regular users
+          if (room.isAvailable) {
+            rooms.add(room);
+          }
+        } catch (e) {
+          debugPrint('Error parsing room ${doc.id}: $e');
+          // Continue processing other rooms even if one fails
+        }
+      }
+      return rooms;
+    }).handleError((error) {
+      debugPrint('Error in streamAllRooms: $error');
       // Return empty list on error instead of crashing
       return <Room>[];
     });
@@ -191,6 +274,7 @@ class BookingService {
     if (amenities != null) {
       updateData['amenities'] = amenities;
     }
+    // Always update imageUrl if provided (including empty string to clear it)
     if (imageUrl != null) {
       updateData['imageUrl'] = imageUrl;
     }
@@ -899,30 +983,22 @@ class BookingService {
       ),
     ];
 
-    // Update/create all rooms while preserving existing availability status
+    // Create only missing rooms - preserve all existing room data
     for (final room in sampleRooms) {
       try {
         // Check if room already exists
         final roomDoc = await _firestore.collection(_roomsCollection).doc(room.id).get();
         
         if (roomDoc.exists) {
-          // Room exists - preserve the existing isAvailable status
-          final existingData = roomDoc.data();
-          final existingIsAvailable = existingData?['isAvailable'] ?? true;
-          
-          // Update room data but preserve availability status
-          final roomData = room.toMap();
-          roomData['isAvailable'] = existingIsAvailable;
-          
-          await _firestore.collection(_roomsCollection).doc(room.id).update(roomData);
-          debugPrint('Updated room: ${room.name} (preserved availability: $existingIsAvailable)');
+          // Room exists - skip updating to preserve all custom changes (name, description, price, etc.)
+          debugPrint('Room ${room.id} already exists - skipping to preserve custom data');
         } else {
-          // Room doesn't exist - create it with default availability
+          // Room doesn't exist - create it with default data
           await _firestore.collection(_roomsCollection).doc(room.id).set(room.toMap());
           debugPrint('Created room: ${room.name}');
         }
       } catch (e) {
-        debugPrint('Error updating/creating room ${room.id}: $e');
+        debugPrint('Error creating room ${room.id}: $e');
       }
     }
     debugPrint('Total rooms processed: ${sampleRooms.length}');

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// ignore: unused_import
 import 'package:image_picker/image_picker.dart';
-// ignore: unused_import
 import 'dart:io';
 import '../services/user_service.dart';
 import '../services/audit_trail_service.dart';
@@ -18,6 +17,8 @@ import '../services/guest_request_service.dart';
 import '../services/event_booking_service.dart';
 import '../models/event_booking.dart';
 import '../models/booking.dart';
+import '../widgets/room_image_widget.dart';
+import '../widgets/profile_image_widget.dart';
 import 'login_page.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -62,6 +63,28 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Helper method to get user initial for fallback
+  // Always shows 'A' for admin users
+  String _getUserInitial(AppUser? user) {
+    if (user == null) return 'A';
+    
+    // Always return 'A' for admin users
+    if (user.role == UserRole.admin) {
+      return 'A';
+    }
+    
+    // For non-admin users, use display name or email
+    if (user.displayName != null && user.displayName!.isNotEmpty) {
+      return user.displayName![0].toUpperCase();
+    }
+    if (user.email.isNotEmpty) {
+      return user.email[0].toUpperCase();
+    }
+    
+    // Default to 'A'
+    return 'A';
   }
 
   Future<void> _loadCurrentUser() async {
@@ -293,59 +316,59 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
+                  ),
                 ),
-                ),
-                  _buildNavItem(
+                _buildNavItem(
                   icon: Icons.people_alt_rounded,
-                    label: 'Users',
-                    index: 1,
+                  label: 'Users',
+                  index: 1,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF38B2AC), Color(0xFF319795)],
                   ),
                 ),
-                  _buildNavItem(
+                _buildNavItem(
                   icon: Icons.king_bed_rounded,
-                    label: 'Rooms',
-                    index: 2,
+                  label: 'Rooms',
+                  index: 2,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFED8936), Color(0xFFDD6B20)],
                   ),
                 ),
-                  _buildNavItem(
+                _buildNavItem(
                   icon: Icons.calendar_today_rounded,
-                    label: 'Room Bookings',
-                    index: 3,
+                  label: 'Room Bookings',
+                  index: 3,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF9F7AEA), Color(0xFF805AD5)],
                   ),
                 ),
-                  _buildNavItem(
-                    icon: Icons.event_rounded,
-                    label: 'Event Bookings',
+                _buildNavItem(
+                  icon: Icons.event_rounded,
+                  label: 'Event Bookings',
                   index: 4,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF687B3), Color(0xFFED64A6)],
                   ),
                 ),
-                  _buildNavItem(
-                    icon: Icons.support_agent_rounded,
-                    label: 'Guest Requests',
+                _buildNavItem(
+                  icon: Icons.support_agent_rounded,
+                  label: 'Guest Requests',
                   index: 5,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF48BB78), Color(0xFF38A169)],
                   ),
                 ),
-                  _buildNavItem(
+                _buildNavItem(
                   icon: Icons.history_toggle_off_rounded,
-                    label: 'Audit Trail',
+                  label: 'Audit Trail',
                   index: 6,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF718096), Color(0xFF4A5568)],
                   ),
                 ),
-                  _buildNavItem(
-                    icon: Icons.settings_rounded,
-                    label: 'System',
+                _buildNavItem(
+                  icon: Icons.settings_rounded,
+                  label: 'System',
                   index: 7,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF4FD1C5), Color(0xFF38B2AC)],
@@ -538,7 +561,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         children: [
               ...visibleItems.map((item) => _buildBottomNavItem(item)),
               if (moreItems.isNotEmpty)
-                _buildMoreButton(moreItems),
+                _buildMoreButton(moreItems), 
             ],
           ),
         ),
@@ -885,17 +908,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Center(
-                    child: Text(
-                      _currentUser?.displayName?.isNotEmpty == true
-                          ? _currentUser!.displayName![0].toUpperCase()
-                          : 'A',
-                        style: const TextStyle(
-                        color: Color(0xFF5A67D8),
-                        fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
+                  child: ProfileImageWidget(
+                    imageUrl: _currentUser?.photoUrl,
+                    size: 44,
+                    fallbackText: _getUserInitial(_currentUser),
+                    backgroundColor: Colors.white,
                   ),
                 ),
               ),
@@ -2404,47 +2421,39 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: room.imageUrl.isNotEmpty
-                      ? Image.network(
-                          room.imageUrl,
+                      ? RoomImageWidget(
+                          imageUrl: room.imageUrl,
                           width: double.infinity,
                           height: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              decoration: BoxDecoration(
-                                gradient: room.isAvailable
-                                    ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
-                                    : const LinearGradient(colors: [Color(0xFF718096), Color(0xFF4A5568)]),
+                          errorWidget: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: room.isAvailable
+                                  ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                  : const LinearGradient(colors: [Color(0xFF718096), Color(0xFF4A5568)]),
+                            ),
+                            child: Icon(
+                              Icons.room_rounded,
+                              size: isMobile ? 40 : 50,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                          placeholder: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: room.isAvailable
+                                  ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                  : const LinearGradient(colors: [Color(0xFF718096), Color(0xFF4A5568)]),
+                            ),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
                               ),
-                              child: Icon(
-                                Icons.room_rounded,
-                                size: isMobile ? 40 : 50,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              decoration: BoxDecoration(
-                                gradient: room.isAvailable
-                                    ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
-                                    : const LinearGradient(colors: [Color(0xFF718096), Color(0xFF4A5568)]),
-                              ),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            );
-                          },
+                            ),
+                          ),
                         )
                       : Container(
                           width: double.infinity,
@@ -3506,36 +3515,28 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                   borderRadius: BorderRadius.circular(16),
             ),
-            child: user.photoUrl != null
-                ? ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      user.photoUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text(
-                            user.email[0].toUpperCase(),
-                            style: TextStyle(
-                              color: roleColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: isMobile ? 20 : 24,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                : Center(
-                    child: Text(
-                      user.email[0].toUpperCase(),
-                      style: TextStyle(
-                        color: roleColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: isMobile ? 20 : 24,
-                      ),
-                    ),
+            child: ProfileImageWidget(
+              imageUrl: user.photoUrl,
+              size: isMobile ? 48 : 60,
+              fallbackText: user.displayName?.isNotEmpty == true
+                  ? user.displayName![0]
+                  : user.email.isNotEmpty
+                      ? user.email[0]
+                      : 'U',
+              backgroundColor: Colors.transparent,
+              errorWidget: Center(
+                child: Text(
+                  user.displayName?.isNotEmpty == true
+                      ? user.displayName![0].toUpperCase()
+                      : user.email[0].toUpperCase(),
+                  style: TextStyle(
+                    color: roleColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: isMobile ? 20 : 24,
                   ),
+                ),
+              ),
+            ),
           ),
               SizedBox(width: isMobile ? 12 : 20),
             Expanded(
@@ -4313,24 +4314,28 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: user.photoUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          user.photoUrl!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Center(
-              child: Text(
-                          user.email[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                child: ProfileImageWidget(
+                  imageUrl: user.photoUrl,
+                  size: 80,
+                  fallbackText: user.displayName?.isNotEmpty == true
+                      ? user.displayName![0]
+                      : user.email.isNotEmpty
+                          ? user.email[0]
+                          : 'U',
+                  backgroundColor: Colors.transparent,
+                  errorWidget: Center(
+                    child: Text(
+                      user.displayName?.isNotEmpty == true
+                          ? user.displayName![0].toUpperCase()
+                          : user.email[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Text(
@@ -4619,6 +4624,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     final imageUrlController = TextEditingController();
     final amenitiesController = TextEditingController();
     bool isAvailable = true;
+    File? selectedImage;
+    bool isUploading = false;
 
     showDialog(
       context: context,
@@ -4626,7 +4633,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         builder: (context, setDialogState) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
             padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
               child: Column(
@@ -4663,6 +4673,194 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ],
                   ),
                   const SizedBox(height: 24),
+                  // Room Image Section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Room Image',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          // Selected Image Preview
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: selectedImage != null
+                                  ? (kIsWeb || 
+                                      selectedImage!.path.startsWith('blob:') || 
+                                      selectedImage!.path.startsWith('http://') || 
+                                      selectedImage!.path.startsWith('https://')
+                                      ? Image.network(
+                                          selectedImage!.path,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            debugPrint('Network image error: $error');
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Center(
+                                                child: CircularProgressIndicator(),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Image.file(
+                                          selectedImage!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            debugPrint('File image error: $error');
+                                            debugPrint('File path: ${selectedImage!.path}');
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                        ))
+                                  : Container(
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(Icons.room_rounded, size: 40),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: isUploading
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final ImagePicker picker = ImagePicker();
+                                            final XFile? image = await picker.pickImage(
+                                              source: ImageSource.gallery,
+                                              imageQuality: 85,
+                                            );
+                                            if (image != null) {
+                                              try {
+                                                // Handle web/desktop blob URLs and regular file paths
+                                                if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
+                                                  // For web/desktop with blob URLs, create a File object with the URL path
+                                                  setDialogState(() {
+                                                    selectedImage = File(image.path);
+                                                  });
+                                                } else {
+                                                  // For mobile/desktop with file paths, try to use the file
+                                                  try {
+                                                    final file = File(image.path);
+                                                    // Use the file directly - don't check existence as it may fail on desktop
+                                                    setDialogState(() {
+                                                      selectedImage = file;
+                                                    });
+                                                  } catch (e) {
+                                                    // If file creation fails, still try to use the path
+                                                    debugPrint('File creation failed, using path anyway: $e');
+                                                    setDialogState(() {
+                                                      selectedImage = File(image.path);
+                                                    });
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Error accessing image: ${e.toString()}'),
+                                                      backgroundColor: Colors.red,
+                                                      behavior: SnackBarBehavior.floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error picking image: ${e.toString()}'),
+                                                  backgroundColor: Colors.red,
+                                                  behavior: SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  icon: const Icon(Icons.upload_rounded, size: 18),
+                                  label: const Text('Upload Image'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF5A67D8),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  ),
+                                ),
+                                if (selectedImage != null) ...[
+                                  const SizedBox(height: 8),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setDialogState(() {
+                                        selectedImage = null;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.close, size: 16),
+                                    label: const Text('Remove'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Or enter image URL below',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: imageUrlController,
+                    decoration: InputDecoration(
+                      labelText: 'Image URL (optional)',
+                      hintText: 'https://example.com/image.jpg',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    enabled: selectedImage == null,
+                  ),
+                  const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
@@ -4716,17 +4914,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: imageUrlController,
-                    decoration: InputDecoration(
-                      labelText: 'Image URL',
-                      hintText: 'https://example.com/image.jpg',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
                     controller: amenitiesController,
                     decoration: InputDecoration(
                       labelText: 'Amenities (comma-separated)',
@@ -4758,68 +4945,134 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: isUploading
+                            ? null
+                            : () => Navigator.pop(context),
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () async {
-                          if (nameController.text.isEmpty ||
-                              descriptionController.text.isEmpty ||
-                              priceController.text.isEmpty ||
-                              capacityController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please fill in all required fields'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
+                        onPressed: isUploading
+                            ? null
+                            : () async {
+                                if (nameController.text.isEmpty ||
+                                    descriptionController.text.isEmpty ||
+                                    priceController.text.isEmpty ||
+                                    capacityController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please fill in all required fields'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          try {
-                            final amenities = amenitiesController.text
-                                .split(',')
-                                .map((e) => e.trim())
-                                .where((e) => e.isNotEmpty)
-                                .toList();
+                                setDialogState(() {
+                                  isUploading = true;
+                                });
 
-                            await _bookingService.createRoom(
-                              name: nameController.text,
-                              description: descriptionController.text,
-                              price: double.tryParse(priceController.text) ?? 0.0,
-                              capacity: int.tryParse(capacityController.text) ?? 2,
-                              amenities: amenities,
-                              imageUrl: imageUrlController.text,
-                              isAvailable: isAvailable,
-                              userId: _currentUser!.id,
-                            );
+                                try {
+                                  String? finalImageUrl;
 
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Room created successfully'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
+                                  final amenities = amenitiesController.text
+                                      .split(',')
+                                      .map((e) => e.trim())
+                                      .where((e) => e.isNotEmpty)
+                                      .toList();
+
+                                  // Create room first (with URL if provided, or empty for now)
+                                  if (selectedImage == null && imageUrlController.text.isNotEmpty) {
+                                    finalImageUrl = imageUrlController.text;
+                                  }
+
+                                  final roomId = await _bookingService.createRoom(
+                                    name: nameController.text,
+                                    description: descriptionController.text,
+                                    price: double.tryParse(priceController.text) ?? 0.0,
+                                    capacity: int.tryParse(capacityController.text) ?? 2,
+                                    amenities: amenities,
+                                    imageUrl: finalImageUrl ?? '',
+                                    isAvailable: isAvailable,
+                                    userId: _currentUser!.id,
+                                  );
+
+                                  // Upload image if a new image was selected (after room creation so we have the room ID)
+                                  if (selectedImage != null) {
+                                    try {
+                                      finalImageUrl = await _bookingService.uploadRoomImage(
+                                        selectedImage!,
+                                        roomId,
+                                      );
+                                      // Update the room with the uploaded image URL
+                                      await _bookingService.updateRoom(
+                                        roomId: roomId,
+                                        name: nameController.text,
+                                        description: descriptionController.text,
+                                        price: double.tryParse(priceController.text) ?? 0.0,
+                                        capacity: int.tryParse(capacityController.text) ?? 2,
+                                        amenities: amenities,
+                                        imageUrl: finalImageUrl,
+                                        isAvailable: isAvailable,
+                                        userId: _currentUser!.id,
+                                      );
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        setDialogState(() {
+                                          isUploading = false;
+                                        });
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Room created but image upload failed: ${e.toString()}'),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                        Navigator.pop(context);
+                                      }
+                                      return;
+                                    }
+                                  }
+
+                                  if (context.mounted) {
+                                    setDialogState(() {
+                                      isUploading = false;
+                                    });
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Room created successfully'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    setDialogState(() {
+                                      isUploading = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5A67D8),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                        child: const Text('Create Room'),
+                        child: isUploading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Create Room'),
                       ),
                     ],
                   ),
@@ -4842,6 +5095,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     final imageUrlController = TextEditingController(text: room.imageUrl);
     final amenitiesController = TextEditingController(text: room.amenities.join(', '));
     bool isAvailable = room.isAvailable;
+    File? selectedImage;
+    bool isUploading = false;
+    bool clearImage = false;
 
     showDialog(
       context: context,
@@ -4849,7 +5105,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         builder: (context, setDialogState) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
             padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
               child: Column(
@@ -4886,6 +5145,223 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ],
                   ),
                   const SizedBox(height: 24),
+                  // Room Image Section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Room Image',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          // Current/Selected Image Preview
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: selectedImage != null
+                                  ? (kIsWeb || selectedImage!.path.startsWith('blob:')
+                                      ? Image.network(
+                                          selectedImage!.path,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Center(
+                                                child: CircularProgressIndicator(),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Image.file(
+                                          selectedImage!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(Icons.image_not_supported, size: 40),
+                                            );
+                                          },
+                                        ))
+                                  : (room.imageUrl.isNotEmpty
+                                      ? RoomImageWidget(
+                                          imageUrl: room.imageUrl,
+                                          fit: BoxFit.cover,
+                                          placeholder: Container(
+                                            color: Colors.grey.shade200,
+                                            child: Center(
+                                              child: CircularProgressIndicator(),
+                                            ),
+                                          ),
+                                          errorWidget: Container(
+                                            color: Colors.grey.shade200,
+                                            child: const Icon(Icons.image_not_supported, size: 40),
+                                          ),
+                                        )
+                                      : Container(
+                                          color: Colors.grey.shade200,
+                                          child: const Icon(Icons.room_rounded, size: 40),
+                                        )),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: isUploading
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final ImagePicker picker = ImagePicker();
+                                            final XFile? image = await picker.pickImage(
+                                              source: ImageSource.gallery,
+                                              imageQuality: 85,
+                                            );
+                                            if (image != null) {
+                                              try {
+                                                // Handle web/desktop blob URLs and regular file paths
+                                                if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
+                                                  // For web/desktop with blob URLs, create a File object with the URL path
+                                                  setDialogState(() {
+                                                    selectedImage = File(image.path);
+                                                  });
+                                                } else {
+                                                  // For mobile/desktop with file paths, try to use the file
+                                                  try {
+                                                    final file = File(image.path);
+                                                    // Use the file directly - don't check existence as it may fail on desktop
+                                                    setDialogState(() {
+                                                      selectedImage = file;
+                                                    });
+                                                  } catch (e) {
+                                                    // If file creation fails, still try to use the path
+                                                    debugPrint('File creation failed, using path anyway: $e');
+                                                    setDialogState(() {
+                                                      selectedImage = File(image.path);
+                                                    });
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Error accessing image: ${e.toString()}'),
+                                                      backgroundColor: Colors.red,
+                                                      behavior: SnackBarBehavior.floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error picking image: ${e.toString()}'),
+                                                  backgroundColor: Colors.red,
+                                                  behavior: SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  icon: const Icon(Icons.upload_rounded, size: 18),
+                                  label: const Text('Upload Image'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF5A67D8),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  ),
+                                ),
+                                if (selectedImage != null || room.imageUrl.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      if (selectedImage != null)
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            setDialogState(() {
+                                              selectedImage = null;
+                                            });
+                                          },
+                                          icon: const Icon(Icons.close, size: 16),
+                                          label: const Text('Remove New Image'),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.red,
+                                          ),
+                                        ),
+                                      if (room.imageUrl.isNotEmpty && selectedImage == null)
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            setDialogState(() {
+                                              imageUrlController.text = '';
+                                              clearImage = true;
+                                            });
+                                          },
+                                          icon: const Icon(Icons.delete_outline, size: 16),
+                                          label: const Text('Clear Current Image'),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.orange,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Or enter image URL below',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: imageUrlController,
+                    decoration: InputDecoration(
+                      labelText: 'Image URL (optional)',
+                      hintText: 'https://example.com/image.jpg',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    enabled: selectedImage == null,
+                  ),
+                  const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
@@ -4939,17 +5415,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: imageUrlController,
-                    decoration: InputDecoration(
-                      labelText: 'Image URL',
-                      hintText: 'https://example.com/image.jpg',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
                     controller: amenitiesController,
                     decoration: InputDecoration(
                       labelText: 'Amenities (comma-separated)',
@@ -4981,71 +5446,135 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: isUploading
+                            ? null
+                            : () => Navigator.pop(context),
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () async {
-                          if (nameController.text.isEmpty ||
-                              descriptionController.text.isEmpty ||
-                              priceController.text.isEmpty ||
-                              capacityController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please fill in all required fields'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
+                        onPressed: isUploading
+                            ? null
+                            : () async {
+                                if (nameController.text.isEmpty ||
+                                    descriptionController.text.isEmpty ||
+                                    priceController.text.isEmpty ||
+                                    capacityController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please fill in all required fields'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          try {
-                            final amenities = amenitiesController.text
-                                .split(',')
-                                .map((e) => e.trim())
-                                .where((e) => e.isNotEmpty)
-                                .toList();
+                                setDialogState(() {
+                                  isUploading = true;
+                                });
 
-                            await _bookingService.updateRoom(
-                              roomId: room.id,
-                              name: nameController.text,
-                              description: descriptionController.text,
-                              price: double.tryParse(priceController.text) ?? room.price,
-                              capacity: int.tryParse(capacityController.text) ?? room.capacity,
-                              amenities: amenities,
-                              imageUrl: imageUrlController.text.isNotEmpty
-                                  ? imageUrlController.text
-                                  : null,
-                              isAvailable: isAvailable,
-                              userId: _currentUser!.id,
-                            );
+                                try {
+                                  String? finalImageUrl;
 
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Room updated successfully'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
+                                  // Upload image if a new image was selected
+                                  if (selectedImage != null) {
+                                    try {
+                                      // Delete old image if it exists and is from Firebase Storage
+                                      if (room.imageUrl.isNotEmpty) {
+                                        await _bookingService.deleteRoomImage(room.imageUrl);
+                                      }
+                                      // Upload new image
+                                      finalImageUrl = await _bookingService.uploadRoomImage(
+                                        selectedImage!,
+                                        room.id,
+                                      );
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        setDialogState(() {
+                                          isUploading = false;
+                                        });
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error uploading image: ${e.toString()}'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
+                                  } else if (imageUrlController.text.isNotEmpty) {
+                                    // Use URL if provided and no new image was selected
+                                    finalImageUrl = imageUrlController.text;
+                                  } else if (clearImage || (imageUrlController.text.isEmpty && room.imageUrl.isNotEmpty)) {
+                                    // If URL field is cleared or clearImage flag is set, remove the image
+                                    finalImageUrl = '';
+                                    // Delete old image from Firebase Storage if it exists
+                                    if (room.imageUrl.isNotEmpty) {
+                                      await _bookingService.deleteRoomImage(room.imageUrl);
+                                    }
+                                  } else {
+                                    // Keep existing image if no changes made
+                                    finalImageUrl = room.imageUrl;
+                                  }
+
+                                  final amenities = amenitiesController.text
+                                      .split(',')
+                                      .map((e) => e.trim())
+                                      .where((e) => e.isNotEmpty)
+                                      .toList();
+
+                                  await _bookingService.updateRoom(
+                                    roomId: room.id,
+                                    name: nameController.text,
+                                    description: descriptionController.text,
+                                    price: double.tryParse(priceController.text) ?? room.price,
+                                    capacity: int.tryParse(capacityController.text) ?? room.capacity,
+                                    amenities: amenities,
+                                    imageUrl: finalImageUrl,
+                                    isAvailable: isAvailable,
+                                    userId: _currentUser!.id,
+                                  );
+
+                                  if (context.mounted) {
+                                    setDialogState(() {
+                                      isUploading = false;
+                                    });
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Room updated successfully'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    setDialogState(() {
+                                      isUploading = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5A67D8),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                        child: const Text('Update Room'),
+                        child: isUploading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Update Room'),
                       ),
                     ],
                   ),
