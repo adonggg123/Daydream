@@ -25,7 +25,7 @@ class NotificationService {
       title: 'New Room Booking',
       message:
           '$userEmail booked $roomName from ${checkIn.toLocal().toIso8601String().substring(0, 10)} '
-          'to ${checkOut.toLocal().toIso8601String().substring(0, 10)} for \$$total',
+          'to ${checkOut.toLocal().toIso8601String().substring(0, 10)} for $total',
       type: AdminNotificationType.bookingCreated,
       bookingId: bookingId,
       userEmail: userEmail,

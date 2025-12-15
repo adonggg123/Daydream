@@ -164,7 +164,7 @@ class RoomAvailability extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                '\$${room.price.toStringAsFixed(2)}/night',
+                                '${room.price.toStringAsFixed(2)}/night',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,

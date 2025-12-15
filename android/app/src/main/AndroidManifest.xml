@@ -10,7 +10,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     
     <application
-        android:label="daydream"
+        android:label="Daydream Ranch Resort"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

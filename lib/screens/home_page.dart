@@ -75,14 +75,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<Room> _applySearchFilter(List<Room> rooms, String query) {
-    if (query.isEmpty) {
+      if (query.isEmpty) {
       return rooms;
     }
     final lowerQuery = query.toLowerCase();
     return rooms.where((room) {
       return room.name.toLowerCase().contains(lowerQuery) ||
           room.description.toLowerCase().contains(lowerQuery);
-    }).toList();
+        }).toList();
   }
 
   void _loadUserProfile() {
@@ -584,50 +584,50 @@ class _HomePageState extends State<HomePage> {
             onRefresh: _loadRooms,
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Quick Stats
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Available Rooms',
-                                      style: AppTheme.bodyMedium.copyWith(
-                                        color: AppTheme.textSecondary,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Quick Stats
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Available Rooms',
+                                        style: AppTheme.bodyMedium.copyWith(
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
                                       '${rooms.where((r) => r.isAvailable).length}',
-                                      style: AppTheme.heading2.copyWith(
-                                        color: AppTheme.primaryColor,
+                                        style: AppTheme.heading2.copyWith(
+                                          color: AppTheme.primaryColor,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Container(
@@ -995,7 +995,7 @@ class _HomePageState extends State<HomePage> {
               ),
             );
         },
-      ),
+            ),
     );
   }
 
@@ -1366,11 +1366,11 @@ class _HomePageState extends State<HomePage> {
                                 width: double.infinity,
                                 height: 200,
                                 errorWidget: Center(
-                                  child: Icon(
-                                    Icons.hotel,
-                                    size: 50,
-                                    color: AppTheme.primaryColor.withOpacity(0.3),
-                                  ),
+                                    child: Icon(
+                                      Icons.hotel,
+                                      size: 50,
+                                      color: AppTheme.primaryColor.withOpacity(0.3),
+                                    ),
                                 ),
                               ),
                             )

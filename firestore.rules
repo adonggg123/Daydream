@@ -89,12 +89,9 @@ service cloud.firestore {
     
     // Event bookings collection
     match /event_bookings/{bookingId} {
+      // All authenticated users can read event bookings (needed for availability checks)
       // Users can read their own bookings, admins/staff can read all
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff', 'receptionist'])
-      );
+      allow read: if isAuthenticated();
       // Users can create their own bookings
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       // Users can update their own bookings, admins/staff can update any
@@ -109,6 +106,11 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff', 'receptionist'])
       );
+    }
+    
+    // Allow authenticated users to list event bookings (for queries with orderBy)
+    match /event_bookings/{document=**} {
+      allow list: if isAuthenticated();
     }
     
     // Cottage bookings collection
@@ -175,10 +177,8 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
-      // System can create (via admin functions)
-      allow create: if isAuthenticated() && 
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
+      // Any authenticated user can create admin notifications (e.g., when booking events/rooms)
+      allow create: if isAuthenticated();
       // Only admins can update/delete
       allow update, delete: if isAuthenticated() && 
                              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -206,10 +206,8 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      // System can create audit logs (via admin functions)
-      allow create: if isAuthenticated() && 
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff'];
+      // Any authenticated user can create audit logs for their own actions
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       // No updates or deletes allowed
       allow update, delete: if false;
     }

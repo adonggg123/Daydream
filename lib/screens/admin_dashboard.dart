@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,6 +26,110 @@ import '../widgets/room_image_widget.dart';
 import '../widgets/cottage_image_widget.dart';
 import '../widgets/profile_image_widget.dart';
 import 'login_page.dart';
+
+// Helper class for formatting numbers with thousands separators
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // If text is empty, return as is
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters except decimal point
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d.]'), '');
+    
+    // Ensure only one decimal point (keep the last one)
+    int lastDotIndex = digitsOnly.lastIndexOf('.');
+    if (lastDotIndex != -1) {
+      String beforeDot = digitsOnly.substring(0, lastDotIndex).replaceAll('.', '');
+      String afterDot = digitsOnly.substring(lastDotIndex + 1);
+      digitsOnly = '$beforeDot.$afterDot';
+    }
+
+    // Limit decimal places to 2
+    if (digitsOnly.contains('.')) {
+      List<String> parts = digitsOnly.split('.');
+      if (parts.length > 1 && parts[1].length > 2) {
+        digitsOnly = '${parts[0]}.${parts[1].substring(0, 2)}';
+      }
+    }
+
+    // Split into integer and decimal parts
+    List<String> parts = digitsOnly.split('.');
+    String integerPart = parts[0];
+    String decimalPart = parts.length > 1 ? '.${parts[1]}' : '';
+
+    // Add thousands separators to integer part
+    if (integerPart.isNotEmpty) {
+      final numberFormat = NumberFormat('#,###');
+      try {
+        final num = int.parse(integerPart);
+        integerPart = numberFormat.format(num);
+      } catch (e) {
+        // If parsing fails, keep original
+      }
+    }
+
+    final formattedText = integerPart + decimalPart;
+
+    // Calculate cursor position - simpler approach for reliability
+    int oldCursorPos = oldValue.selection.baseOffset;
+    int newCursorPos = formattedText.length;
+    
+    // Get digits-only versions to detect insertions/deletions
+    String oldDigitsOnly = oldValue.text.replaceAll(RegExp(r'[^\d.]'), '');
+    String newDigitsOnly = digitsOnly;
+    
+    // Check if this is a deletion
+    bool isDeletion = newDigitsOnly.length < oldDigitsOnly.length;
+    bool wasAtEnd = oldCursorPos >= oldValue.text.length;
+    
+    if (!isDeletion || wasAtEnd) {
+      // User is typing (not deleting) or was at end - place cursor at end
+      // This ensures digits are always entered correctly
+      newCursorPos = formattedText.length;
+    } else {
+      // User is deleting - try to maintain position
+      String oldTextBeforeCursor = oldValue.text.substring(0, oldCursorPos);
+      String oldDigitsBeforeCursor = oldTextBeforeCursor.replaceAll(RegExp(r'[^\d.]'), '');
+      int digitsBeforeCursor = oldDigitsBeforeCursor.length;
+      
+      // Find position in new text with same number of digits before cursor
+      int digitCount = 0;
+      for (int i = 0; i < formattedText.length; i++) {
+        if (RegExp(r'[\d.]').hasMatch(formattedText[i])) {
+          if (digitCount >= digitsBeforeCursor) {
+            newCursorPos = i;
+            break;
+          }
+          digitCount++;
+        }
+      }
+    }
+
+    return TextEditingValue(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: newCursorPos),
+    );
+  }
+}
+
+// Helper function to parse formatted number string to double
+double parseFormattedNumber(String formattedString) {
+  // Remove all commas and parse
+  final cleaned = formattedString.replaceAll(',', '');
+  return double.parse(cleaned);
+}
+
+// Helper function to format number with thousands separators
+String formatNumberWithSeparators(double number) {
+  final formatter = NumberFormat('#,##0.00');
+  return formatter.format(number);
+}
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -1149,14 +1254,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         return SizedBox(
           height: 150,
           child: Row(
+            mainAxisSize: MainAxisSize.max,
             children: [
-              Expanded(child: _buildStatCard(stats[0], isMobile: false)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard(stats[1], isMobile: false)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard(stats[2], isMobile: false)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard(stats[3], isMobile: false)),
+              Expanded(flex: 1, child: _buildStatCard(stats[0], isMobile: false)),
+              const SizedBox(width: 10),
+              Expanded(flex: 1, child: _buildStatCard(stats[1], isMobile: false)),
+              const SizedBox(width: 10),
+              Expanded(flex: 1, child: _buildStatCard(stats[2], isMobile: false)),
+              const SizedBox(width: 10),
+              Expanded(flex: 1, child: _buildStatCard(stats[3], isMobile: false)),
             ],
           ),
         );
@@ -2133,10 +2239,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             ],
           ),
           SizedBox(height: isMobile ? 12 : 16),
-          Row(
-            children: [
-              Expanded(
-                child: Row(
+          if (isMobile)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     Icon(Icons.people_outline, size: 16, color: Colors.grey.shade500),
                     const SizedBox(width: 6),
@@ -2144,92 +2251,204 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       '${cottage.capacity} guests',
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: isMobile ? 13 : 14,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.attach_money, size: 16, color: Colors.grey.shade500),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '₱${cottage.price.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showEditCottageDialog(cottage),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'Edit',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showDeleteCottageDialog(cottage),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.delete_rounded, color: Colors.white, size: 16),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'Delete',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.people_outline, size: 16, color: Colors.grey.shade500),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${cottage.capacity} guests',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Icon(Icons.attach_money, size: 16, color: Colors.grey.shade500),
                     const SizedBox(width: 6),
                     Text(
-                      '₱${cottage.price.toStringAsFixed(0)}/night',
+                      '₱${cottage.price.toStringAsFixed(0)}',
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: isMobile ? 13 : 14,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _showEditCottageDialog(cottage),
+                const Spacer(),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5A67D8), Color(0xFF4C51BF)],
+                    ),
                     borderRadius: BorderRadius.circular(10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Edit',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showEditCottageDialog(cottage),
+                      borderRadius: BorderRadius.circular(10),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'Edit',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _showDeleteCottageDialog(cottage),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                    ),
                     borderRadius: BorderRadius.circular(10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.delete_rounded, color: Colors.white, size: 16),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Delete',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showDeleteCottageDialog(cottage),
+                      borderRadius: BorderRadius.circular(10),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delete_rounded, color: Colors.white, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'Delete',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -5608,6 +5827,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     final amenitiesController = TextEditingController();
     bool isAvailable = true;
     File? selectedImage;
+    Uint8List? selectedImageBytes; // Store bytes for web compatibility
     bool isUploading = false;
 
     showDialog(
@@ -5741,11 +5961,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                             );
                                             if (image != null) {
                                               try {
+                                                // Read bytes from XFile (works on all platforms including web)
+                                                final bytes = await image.readAsBytes();
+                                                
                                                 // Handle web/desktop blob URLs and regular file paths
                                                 if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
-                                                  // For web/desktop with blob URLs, create a File object with the URL path
+                                                  // For web/desktop, store bytes and create a File object with the URL path
                                                   setDialogState(() {
                                                     selectedImage = File(image.path);
+                                                    selectedImageBytes = bytes;
                                                   });
                                                 } else {
                                                   // For mobile/desktop with file paths, try to use the file
@@ -5754,12 +5978,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     // Use the file directly - don't check existence as it may fail on desktop
                                                     setDialogState(() {
                                                       selectedImage = file;
+                                                      selectedImageBytes = bytes;
                                                     });
                                                   } catch (e) {
                                                     // If file creation fails, still try to use the path
                                                     debugPrint('File creation failed, using path anyway: $e');
                                                     setDialogState(() {
                                                       selectedImage = File(image.path);
+                                                      selectedImageBytes = bytes;
                                                     });
                                                   }
                                                 }
@@ -5767,7 +5993,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     SnackBar(
-                                                      content: Text('Error accessing image: ${e.toString()}'),
+                                                      content: Text('Error reading image: ${e.toString()}'),
                                                       backgroundColor: Colors.red,
                                                       behavior: SnackBarBehavior.floating,
                                                       shape: RoundedRectangleBorder(
@@ -5807,6 +6033,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     onPressed: () {
                                       setDialogState(() {
                                         selectedImage = null;
+                                        selectedImageBytes = null;
                                       });
                                     },
                                     icon: const Icon(Icons.close, size: 16),
@@ -5986,6 +6213,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                       finalImageUrl = await _bookingService.uploadRoomImage(
                                         selectedImage!,
                                         roomId,
+                                        imageBytes: selectedImageBytes,
                                       );
                                       // Update the room with the uploaded image URL
                                       await _bookingService.updateRoom(
@@ -6079,6 +6307,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     final amenitiesController = TextEditingController(text: room.amenities.join(', '));
     bool isAvailable = room.isAvailable;
     File? selectedImage;
+    Uint8List? selectedImageBytes; // Store bytes for web compatibility
     bool isUploading = false;
     bool clearImage = false;
 
@@ -6222,11 +6451,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                             );
                                             if (image != null) {
                                               try {
+                                                // Read bytes from XFile (works on all platforms including web)
+                                                final bytes = await image.readAsBytes();
+                                                
                                                 // Handle web/desktop blob URLs and regular file paths
                                                 if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
-                                                  // For web/desktop with blob URLs, create a File object with the URL path
+                                                  // For web/desktop, store bytes and create a File object with the URL path
                                                   setDialogState(() {
                                                     selectedImage = File(image.path);
+                                                    selectedImageBytes = bytes;
                                                   });
                                                 } else {
                                                   // For mobile/desktop with file paths, try to use the file
@@ -6235,12 +6468,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     // Use the file directly - don't check existence as it may fail on desktop
                                                     setDialogState(() {
                                                       selectedImage = file;
+                                                      selectedImageBytes = bytes;
                                                     });
                                                   } catch (e) {
                                                     // If file creation fails, still try to use the path
                                                     debugPrint('File creation failed, using path anyway: $e');
                                                     setDialogState(() {
                                                       selectedImage = File(image.path);
+                                                      selectedImageBytes = bytes;
                                                     });
                                                   }
                                                 }
@@ -6248,7 +6483,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     SnackBar(
-                                                      content: Text('Error accessing image: ${e.toString()}'),
+                                                      content: Text('Error reading image: ${e.toString()}'),
                                                       backgroundColor: Colors.red,
                                                       behavior: SnackBarBehavior.floating,
                                                       shape: RoundedRectangleBorder(
@@ -6292,6 +6527,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           onPressed: () {
                                             setDialogState(() {
                                               selectedImage = null;
+                                              selectedImageBytes = null;
                                             });
                                           },
                                           icon: const Icon(Icons.close, size: 16),
@@ -6463,13 +6699,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   if (selectedImage != null) {
                                     try {
                                       // Delete old image if it exists and is from Firebase Storage
-                                      if (room.imageUrl.isNotEmpty) {
-                                        await _bookingService.deleteRoomImage(room.imageUrl);
+                                      if (room.imageUrl.isNotEmpty && !room.imageUrl.startsWith('data:image')) {
+                                        try {
+                                          await _bookingService.deleteRoomImage(room.imageUrl);
+                                        } catch (e) {
+                                          // Ignore deletion errors for Base64 images
+                                          debugPrint('Note: Could not delete old image (may be Base64): $e');
+                                        }
                                       }
                                       // Upload new image
                                       finalImageUrl = await _bookingService.uploadRoomImage(
                                         selectedImage!,
                                         room.id,
+                                        imageBytes: selectedImageBytes,
                                       );
                                     } catch (e) {
                                       if (context.mounted) {
@@ -6488,16 +6730,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   } else if (imageUrlController.text.isNotEmpty) {
                                     // Use URL if provided and no new image was selected
                                     finalImageUrl = imageUrlController.text;
-                                  } else if (clearImage || (imageUrlController.text.isEmpty && room.imageUrl.isNotEmpty)) {
-                                    // If URL field is cleared or clearImage flag is set, remove the image
+                                  } else if (clearImage) {
+                                    // If clearImage flag is set, remove the image
                                     finalImageUrl = '';
-                                    // Delete old image from Firebase Storage if it exists
-                                    if (room.imageUrl.isNotEmpty) {
-                                      await _bookingService.deleteRoomImage(room.imageUrl);
+                                    // Delete old image from Firebase Storage if it exists (only if not Base64)
+                                    if (room.imageUrl.isNotEmpty && !room.imageUrl.startsWith('data:image')) {
+                                      try {
+                                        await _bookingService.deleteRoomImage(room.imageUrl);
+                                      } catch (e) {
+                                        debugPrint('Note: Could not delete old image (may be Base64): $e');
+                                      }
                                     }
                                   } else {
-                                    // Keep existing image if no changes made
-                                    finalImageUrl = room.imageUrl;
+                                    // Keep existing image if no changes made - pass null to preserve
+                                    finalImageUrl = null;
                                   }
 
                                   final amenities = amenitiesController.text
@@ -6680,6 +6926,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     final priceController = TextEditingController();
     final capacityController = TextEditingController(text: '2');
     File? selectedImage;
+    Uint8List? selectedImageBytes; // Store bytes for web compatibility
     bool isUploading = false;
 
     showDialog(
@@ -6808,20 +7055,37 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                               imageQuality: 85,
                                             );
                                             if (image != null) {
-                                              if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
-                                                setDialogState(() {
-                                                  selectedImage = File(image.path);
-                                                });
-                                              } else {
-                                                try {
-                                                  final file = File(image.path);
-                                                  setDialogState(() {
-                                                    selectedImage = file;
-                                                  });
-                                                } catch (e) {
+                                              try {
+                                                // Read bytes from XFile (works on all platforms including web)
+                                                final bytes = await image.readAsBytes();
+                                                
+                                                if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
                                                   setDialogState(() {
                                                     selectedImage = File(image.path);
+                                                    selectedImageBytes = bytes;
                                                   });
+                                                } else {
+                                                  try {
+                                                    final file = File(image.path);
+                                                    setDialogState(() {
+                                                      selectedImage = file;
+                                                      selectedImageBytes = bytes;
+                                                    });
+                                                  } catch (e) {
+                                                    setDialogState(() {
+                                                      selectedImage = File(image.path);
+                                                      selectedImageBytes = bytes;
+                                                    });
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Error reading image: ${e.toString()}'),
+                                                      backgroundColor: Colors.red,
+                                                    ),
+                                                  );
                                                 }
                                               }
                                             }
@@ -6865,7 +7129,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             border: OutlineInputBorder(),
                             prefixText: '₱',
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            ThousandsSeparatorInputFormatter(),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -6926,13 +7193,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     imageUrl = await _cottageService.uploadCottageImage(
                                       selectedImage!,
                                       '',
+                                      imageBytes: selectedImageBytes,
                                     );
                                   }
 
                                   await _cottageService.createCottage(
                                     name: nameController.text,
                                     description: '', // Empty description
-                                    price: double.parse(priceController.text),
+                                    price: parseFormattedNumber(priceController.text),
                                     capacity: int.parse(capacityController.text),
                                     amenities: const [], // Empty amenities
                                     imageUrl: imageUrl,
@@ -6996,10 +7264,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     if (_currentUser == null) return;
 
     final nameController = TextEditingController(text: cottage.name);
-    final priceController = TextEditingController(text: cottage.price.toStringAsFixed(2));
+    final priceController = TextEditingController(text: formatNumberWithSeparators(cottage.price));
     final capacityController = TextEditingController(text: cottage.capacity.toString());
     bool isAvailable = cottage.isAvailable;
     File? selectedImage;
+    Uint8List? selectedImageBytes; // Store bytes for web compatibility
     bool isUploading = false;
     bool clearImage = false;
 
@@ -7122,23 +7391,40 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                               imageQuality: 85,
                                             );
                                             if (image != null) {
-                                              if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
-                                                setDialogState(() {
-                                                  selectedImage = File(image.path);
-                                                  clearImage = false;
-                                                });
-                                              } else {
-                                                try {
-                                                  final file = File(image.path);
-                                                  setDialogState(() {
-                                                    selectedImage = file;
-                                                    clearImage = false;
-                                                  });
-                                                } catch (e) {
+                                              try {
+                                                // Read bytes from XFile (works on all platforms including web)
+                                                final bytes = await image.readAsBytes();
+                                                
+                                                if (kIsWeb || image.path.startsWith('blob:') || image.path.startsWith('http://') || image.path.startsWith('https://')) {
                                                   setDialogState(() {
                                                     selectedImage = File(image.path);
+                                                    selectedImageBytes = bytes;
                                                     clearImage = false;
                                                   });
+                                                } else {
+                                                  try {
+                                                    final file = File(image.path);
+                                                    setDialogState(() {
+                                                      selectedImage = file;
+                                                      selectedImageBytes = bytes;
+                                                      clearImage = false;
+                                                    });
+                                                  } catch (e) {
+                                                    setDialogState(() {
+                                                      selectedImage = File(image.path);
+                                                      selectedImageBytes = bytes;
+                                                      clearImage = false;
+                                                    });
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Error reading image: ${e.toString()}'),
+                                                      backgroundColor: Colors.red,
+                                                    ),
+                                                  );
                                                 }
                                               }
                                             }
@@ -7162,6 +7448,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                       setDialogState(() {
                                         clearImage = true;
                                         selectedImage = null;
+                                        selectedImageBytes = null;
                                       });
                                     },
                                     child: const Text('Remove Image'),
@@ -7192,7 +7479,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             border: OutlineInputBorder(),
                             prefixText: '₱',
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            ThousandsSeparatorInputFormatter(),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -7255,19 +7545,48 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 try {
                                   String? imageUrl;
                                   if (selectedImage != null) {
-                                    imageUrl = await _cottageService.uploadCottageImage(
-                                      selectedImage!,
-                                      cottage.id,
-                                    );
+                                    try {
+                                      // Delete old image if it exists and is from Firebase Storage (not Base64)
+                                      if (cottage.imageUrl.isNotEmpty && !cottage.imageUrl.startsWith('data:image')) {
+                                        try {
+                                          // Note: CottageService doesn't have deleteCottageImage, but Base64 images don't need deletion
+                                          debugPrint('Old cottage image will be replaced');
+                                        } catch (e) {
+                                          debugPrint('Note: Could not delete old image: $e');
+                                        }
+                                      }
+                                      // Upload new image
+                                      imageUrl = await _cottageService.uploadCottageImage(
+                                        selectedImage!,
+                                        cottage.id,
+                                        imageBytes: selectedImageBytes,
+                                      );
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        setDialogState(() {
+                                          isUploading = false;
+                                        });
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error uploading image: ${e.toString()}'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
                                   } else if (clearImage) {
                                     imageUrl = '';
+                                  } else {
+                                    // Keep existing image if no changes made - pass null to preserve
+                                    imageUrl = null;
                                   }
 
                                   await _cottageService.updateCottage(
                                     cottageId: cottage.id,
                                     name: nameController.text,
                                     description: cottage.description, // Keep existing description
-                                    price: double.parse(priceController.text),
+                                    price: parseFormattedNumber(priceController.text),
                                     capacity: int.parse(capacityController.text),
                                     amenities: cottage.amenities, // Keep existing amenities
                                     imageUrl: imageUrl,

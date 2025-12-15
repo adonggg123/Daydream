@@ -5,20 +5,20 @@ import 'dart:convert';
 /// and regular image URLs (network or data URIs)
 class CottageImageWidget extends StatelessWidget {
   final String? imageUrl;
-  final double? width;
-  final double? height;
   final BoxFit fit;
   final Widget? placeholder;
   final Widget? errorWidget;
+  final double? width;
+  final double? height;
 
   const CottageImageWidget({
     super.key,
     this.imageUrl,
-    this.width,
-    this.height,
     this.fit = BoxFit.cover,
     this.placeholder,
     this.errorWidget,
+    this.width,
+    this.height,
   });
 
   /// Check if the imageUrl is a Base64 data URI
@@ -41,14 +41,11 @@ class CottageImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If no image URL, show placeholder or error widget
-    if (imageUrl == null || imageUrl!.isEmpty || imageUrl!.trim().isEmpty) {
+    if (imageUrl == null || imageUrl!.isEmpty) {
       return errorWidget ??
           Container(
-            width: width,
-            height: height,
             color: Colors.grey.shade200,
-            child: const Icon(Icons.home, size: 40, color: Colors.grey),
+            child: const Icon(Icons.image_not_supported, size: 40),
           );
     }
 
@@ -56,51 +53,42 @@ class CottageImageWidget extends StatelessWidget {
     if (_isBase64Image(imageUrl!)) {
       try {
         final base64String = _extractBase64(imageUrl!);
-        if (base64String != null && base64String.isNotEmpty) {
+        if (base64String != null) {
           final bytes = base64Decode(base64String);
-          if (bytes.isNotEmpty) {
-            return Image.memory(
-              bytes,
-              width: width,
-              height: height,
-              fit: fit,
-              errorBuilder: (context, error, stackTrace) {
-                return errorWidget ??
-                    Container(
-                      width: width,
-                      height: height,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.home, size: 40, color: Colors.grey),
-                    );
-              },
-            );
-          }
-        }
-      } catch (e) {
-        debugPrint('Error decoding Base64 cottage image: $e');
-      }
-      // If Base64 decode failed, show error widget
-      return errorWidget ??
-          Container(
+          return Image.memory(
+            bytes,
+            fit: fit,
             width: width,
             height: height,
-            color: Colors.grey.shade200,
-            child: const Icon(Icons.home, size: 40, color: Colors.grey),
+            errorBuilder: (context, error, stackTrace) {
+              return errorWidget ??
+                  Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.image_not_supported, size: 40),
+                  );
+            },
           );
+        }
+      } catch (e) {
+        debugPrint('Error decoding Base64 image: $e');
+        return errorWidget ??
+            Container(
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.image_not_supported, size: 40),
+            );
+      }
     }
 
     // Handle regular network URLs
     return Image.network(
       imageUrl!,
+      fit: fit,
       width: width,
       height: height,
-      fit: fit,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return placeholder ??
             Container(
-              width: width,
-              height: height,
               color: Colors.grey.shade200,
               child: Center(
                 child: CircularProgressIndicator(
@@ -108,7 +96,6 @@ class CottageImageWidget extends StatelessWidget {
                       ? loadingProgress.cumulativeBytesLoaded /
                           loadingProgress.expectedTotalBytes!
                       : null,
-                  strokeWidth: 2,
                 ),
               ),
             );
@@ -116,10 +103,8 @@ class CottageImageWidget extends StatelessWidget {
       errorBuilder: (context, error, stackTrace) {
         return errorWidget ??
             Container(
-              width: width,
-              height: height,
               color: Colors.grey.shade200,
-              child: const Icon(Icons.home, size: 40, color: Colors.grey),
+              child: const Icon(Icons.image_not_supported, size: 40),
             );
       },
     );

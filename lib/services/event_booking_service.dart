@@ -52,6 +52,8 @@ class EventBookingService {
         .collection(_collection)
         .where('eventDateKey', isEqualTo: key)
         .where('status', isNotEqualTo: EventBookingStatus.cancelled.name)
+        .orderBy('status')
+        .orderBy('__name__')
         .get();
     return snapshot.docs.isEmpty;
   }
@@ -69,6 +71,8 @@ class EventBookingService {
         .collection(_collection)
         .where('eventDateKey', isEqualTo: key)
         .where('status', isNotEqualTo: EventBookingStatus.cancelled.name)
+        .orderBy('status')
+        .orderBy('__name__')
         .limit(1)
         .get();
 
@@ -90,30 +94,41 @@ class EventBookingService {
 
     await doc.set(booking.toMap());
 
+    // Try to log audit trail and send notification, but don't fail if permissions are denied
     final profile = await _userService.getUserProfile(userId);
     if (profile != null) {
-      await _auditTrail.logAction(
-        userId: userId,
-        userEmail: userEmail,
-        userRole: profile.role,
-        action: AuditAction.bookingCreated,
-        resourceType: 'event_booking',
-        resourceId: doc.id,
-        details: {
-          'eventType': eventType.name,
-          'eventDate': booking.eventDate.toIso8601String(),
-          'people': peopleCount,
-        },
-      );
+      try {
+        await _auditTrail.logAction(
+          userId: userId,
+          userEmail: userEmail,
+          userRole: profile.role,
+          action: AuditAction.bookingCreated,
+          resourceType: 'event_booking',
+          resourceId: doc.id,
+          details: {
+            'eventType': eventType.name,
+            'eventDate': booking.eventDate.toIso8601String(),
+            'people': peopleCount,
+          },
+        );
+      } catch (e) {
+        // Silently handle audit trail errors - booking is already created
+        debugPrint('Audit trail logging failed (permission issue): $e');
+      }
       
       // Send notification to admin
-      await _notificationService.createAdminEventBookingNotification(
-        bookingId: doc.id,
-        userEmail: userEmail,
-        eventType: Booking.getEventTypeDisplay(eventType),
-        eventDate: booking.eventDate,
-        peopleCount: peopleCount,
-      );
+      try {
+        await _notificationService.createAdminEventBookingNotification(
+          bookingId: doc.id,
+          userEmail: userEmail,
+          eventType: Booking.getEventTypeDisplay(eventType),
+          eventDate: booking.eventDate,
+          peopleCount: peopleCount,
+        );
+      } catch (e) {
+        // Silently handle notification errors - booking is already created
+        debugPrint('Admin notification creation failed (permission issue): $e');
+      }
     }
 
     return doc.id;

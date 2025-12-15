@@ -160,7 +160,7 @@ class RoomDetailPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '\$${room.price.toStringAsFixed(2)}',
+                            '${room.price.toStringAsFixed(2)}',
                             style: AppTheme.heading2.copyWith(
                               color: AppTheme.primaryColor,
                             ),

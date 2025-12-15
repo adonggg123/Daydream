@@ -157,24 +157,24 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
           } else {
             // Use regular booking service for room bookings
             bookingId = await _bookingService.createBooking(
-              userId: user.uid,
-              roomId: widget.room.id,
-              roomName: widget.room.name,
-              checkIn: widget.checkIn,
-              checkOut: widget.checkOut,
-              guests: widget.guests,
-              eventType: widget.eventType,
-              eventDetails: widget.eventDetails,
-              specialRequests: widget.specialRequests,
-              roomPrice: _bookingCost.roomCost,
-              eventFee: _bookingCost.eventFee,
-              subtotal: _bookingCost.subtotal,
-              tax: _bookingCost.tax,
-              discount: _bookingCost.discount,
-              total: _bookingCost.total,
-              paymentId: paymentResult.paymentId,
-              isPaid: true,
-            );
+            userId: user.uid,
+            roomId: widget.room.id,
+            roomName: widget.room.name,
+            checkIn: widget.checkIn,
+            checkOut: widget.checkOut,
+            guests: widget.guests,
+            eventType: widget.eventType,
+            eventDetails: widget.eventDetails,
+            specialRequests: widget.specialRequests,
+            roomPrice: _bookingCost.roomCost,
+            eventFee: _bookingCost.eventFee,
+            subtotal: _bookingCost.subtotal,
+            tax: _bookingCost.tax,
+            discount: _bookingCost.discount,
+            total: _bookingCost.total,
+            paymentId: paymentResult.paymentId,
+            isPaid: true,
+          );
           }
 
           if (mounted) {
