@@ -2454,6 +2454,49 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
+  String _formatBookingDates(dynamic checkIn, dynamic checkOut, {bool isEvent = false}) {
+    if (checkIn == null || checkOut == null) return 'N/A';
+
+    DateTime checkInDate;
+    DateTime checkOutDate;
+
+    if (checkIn is Timestamp) {
+      checkInDate = checkIn.toDate();
+    } else if (checkIn is DateTime) {
+      checkInDate = checkIn;
+    } else if (checkIn is String) {
+      try {
+        checkInDate = DateTime.parse(checkIn);
+      } catch (e) {
+        return 'Invalid date';
+      }
+    } else {
+      return 'N/A';
+    }
+
+    if (checkOut is Timestamp) {
+      checkOutDate = checkOut.toDate();
+    } else if (checkOut is DateTime) {
+      checkOutDate = checkOut;
+    } else if (checkOut is String) {
+      try {
+        checkOutDate = DateTime.parse(checkOut);
+      } catch (e) {
+        return 'Invalid date';
+      }
+    } else {
+      return 'N/A';
+    }
+
+    final formatter = DateFormat('MMM dd, yyyy');
+    if (isEvent) {
+      return formatter.format(checkInDate);
+    } else {
+      final nights = checkOutDate.difference(checkInDate).inDays;
+      return '${formatter.format(checkInDate)} to ${formatter.format(checkOutDate)} (${nights == 1 ? '1 night' : '$nights nights'})';
+    }
+  }
+
   Widget _buildRoomBookingsTab() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2574,85 +2617,502 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ],
       ),
-                        child: Column(
-        children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: isMobile ? 48 : 60,
-                                  height: isMobile ? 48 : 60,
-                                  decoration: BoxDecoration(
-                                    gradient: status == BookingStatus.confirmed
-                                        ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
-                                        : status == BookingStatus.rejected
-                                            ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
-                                            : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                    child: Icon(
-                                    status == BookingStatus.confirmed
-                                        ? Icons.check_circle
-                                        : status == BookingStatus.rejected
-                                            ? Icons.cancel
-                                            : Icons.pending,
-                                    color: Colors.white,
-                                    size: isMobile ? 22 : 28,
-                                  ),
-                                ),
-                                SizedBox(width: isMobile ? 12 : 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                                      Text(
-                                        data['roomName'] ?? 'Unknown',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: isMobile ? 15 : 17,
-                                          color: const Color(0xFF1F2937),
+                        child: isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          gradient: status == BookingStatus.confirmed
+                                              ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                              : status == BookingStatus.rejected
+                                                  ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                                  : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                          borderRadius: BorderRadius.circular(14),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
+                                        child: Icon(
+                                          status == BookingStatus.confirmed
+                                              ? Icons.check_circle
+                                              : status == BookingStatus.rejected
+                                                  ? Icons.cancel
+                                                  : Icons.pending,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
                                       ),
-                                      const SizedBox(height: 6),
-                Row(
-                  children: [
-                                          Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
-                                          const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                                              'Guest: ${data['userId'] ?? 'N/A'}',
-                        style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: isMobile ? 13 : 14,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              data['roomName'] ?? 'Unknown',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
+                                                color: Color(0xFF1F2937),
                                               ),
                                               overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            FutureBuilder<AppUser?>(
+                                              future: _userService.getUserProfile(data['userId'] ?? ''),
+                                              builder: (context, userSnapshot) {
+                                                final userName = userSnapshot.data?.displayName ??
+                                                    userSnapshot.data?.email ??
+                                                    data['userId'] ?? 'N/A';
+                                                return Row(
+                                                  children: [
+                                                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Guest: $userName',
+                                                        style: TextStyle(
+                                                          color: Colors.grey.shade600,
+                                                          fontSize: 13,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          _formatBookingDates(data['checkIn'], data['checkOut']),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 13,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (data['guests'] != null) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.people, size: 14, color: Colors.grey.shade500),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${data['guests']} guest${data['guests'] == 1 ? '' : 's'}',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  if (data['total'] != null) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.attach_money, size: 14, color: Colors.grey.shade500),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '₱${(data['total'] is num ? data['total'].toDouble() : 0.0).toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey.shade900,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: status == BookingStatus.confirmed
+                                              ? const Color(0xFF38B2AC).withOpacity(0.1)
+                                              : status == BookingStatus.rejected
+                                                  ? const Color(0xFFF56565).withOpacity(0.1)
+                                                  : const Color(0xFFED8936).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          status.name.toUpperCase(),
+                                          style: TextStyle(
+                                            color: status == BookingStatus.confirmed
+                                                ? const Color(0xFF38B2AC)
+                                                : status == BookingStatus.rejected
+                                                    ? const Color(0xFFF56565)
+                                                    : const Color(0xFFED8936),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.grey.shade300),
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(Icons.edit, color: Colors.grey.shade700, size: 18),
+                                              tooltip: 'Edit Status',
+                                              onPressed: () async {
+                                                if (_currentUser == null) return;
+                                                final newStatus = await showDialog<BookingStatus>(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    BookingStatus? selectedStatus = status;
+                                                    return StatefulBuilder(
+                                                      builder: (context, setState) => AlertDialog(
+                                                        title: const Text('Change Booking Status'),
+                                                        content: Column(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: BookingStatus.values.map((s) {
+                                                            return RadioListTile<BookingStatus>(
+                                                              title: Text(s.name.toUpperCase()),
+                                                              value: s,
+                                                              groupValue: selectedStatus,
+                                                              onChanged: (value) {
+                                                                setState(() => selectedStatus = value);
+                                                              },
+                                                            );
+                                                          }).toList(),
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('Cancel'),
+                                                          ),
+                                                          ElevatedButton(
+                                                            onPressed: () => Navigator.pop(context, selectedStatus),
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor: const Color(0xFF5A67D8),
+                                                            ),
+                                                            child: const Text('Update'),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                                if (newStatus != null && newStatus != status) {
+                                                  try {
+                                                    await FirebaseFirestore.instance
+                                                        .collection('bookings')
+                                                        .doc(bookingId)
+                                                        .update({'status': newStatus.name});
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Booking status updated to ${newStatus.name}'),
+                                                          backgroundColor: Colors.green,
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Error: ${e.toString()}'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                }
+                                              },
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                      child: Text(
-                                              '${data['checkIn'] ?? ''} to ${data['checkOut'] ?? ''}',
-                        style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: isMobile ? 13 : 14,
-                        ),
-                                              overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
                                     ],
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
+                                  if (isPending) ...[
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFF48BB78).withOpacity(0.3),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(Icons.check, color: Colors.white, size: 18),
+                                            tooltip: 'Accept',
+                                            onPressed: () async {
+                                              if (_currentUser == null) return;
+                                              try {
+                                                await _bookingService.acceptBooking(
+                                                  bookingId: bookingId,
+                                                  callerUserId: _currentUser!.id,
+                                                  checkConflicts: true,
+                                                );
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: const Text('Booking accepted'),
+                                                      backgroundColor: Colors.green,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                if (mounted) {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) => AlertDialog(
+                                                      title: const Text('Error'),
+                                                      content: Text(e.toString()),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () => Navigator.pop(context),
+                                                          child: const Text('OK'),
+                                                        ),
+                                                        if (e.toString().contains('Conflict'))
+                                                          TextButton(
+                                                            onPressed: () async {
+                                                              Navigator.pop(context);
+                                                              try {
+                                                                await _bookingService.acceptBooking(
+                                                                  bookingId: bookingId,
+                                                                  callerUserId: _currentUser!.id,
+                                                                  checkConflicts: false,
+                                                                );
+                                                                if (mounted) {
+                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text('Booking accepted (conflicts ignored)'),
+                                                                      backgroundColor: Colors.orange,
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              } catch (e2) {
+                                                                if (mounted) {
+                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Text('Error: ${e2.toString()}'),
+                                                                      backgroundColor: Colors.red,
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              }
+                                                            },
+                                                            child: const Text('Accept Anyway'),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFFF56565).withOpacity(0.3),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                                            tooltip: 'Reject',
+                                            onPressed: () async {
+                                              if (_currentUser == null) return;
+                                              final reason = await showDialog<String>(
+                                                context: context,
+                                                builder: (context) {
+                                                  final controller = TextEditingController();
+                                                  return AlertDialog(
+                                                    title: const Text('Reject Booking'),
+                                                    content: TextField(
+                                                      controller: controller,
+                                                      decoration: const InputDecoration(
+                                                        labelText: 'Reason (optional)',
+                                                        hintText: 'Enter rejection reason...',
+                                                      ),
+                                                      maxLines: 3,
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('Cancel'),
+                                                      ),
+                                                      ElevatedButton(
+                                                        onPressed: () => Navigator.pop(context, controller.text),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: const Color(0xFFF56565),
+                                                        ),
+                                                        child: const Text('Reject'),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                              if (reason != null) {
+                                                try {
+                                                  await _bookingService.rejectBooking(
+                                                    bookingId: bookingId,
+                                                    callerUserId: _currentUser!.id,
+                                                    reason: reason.isEmpty ? null : reason,
+                                                  );
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Booking rejected'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text('Error: ${e.toString()}'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                }
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          gradient: status == BookingStatus.confirmed
+                                              ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                              : status == BookingStatus.rejected
+                                                  ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                                  : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: Icon(
+                                          status == BookingStatus.confirmed
+                                              ? Icons.check_circle
+                                              : status == BookingStatus.rejected
+                                                  ? Icons.cancel
+                                                  : Icons.pending,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              data['roomName'] ?? 'Unknown',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 17,
+                                                color: Color(0xFF1F2937),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            FutureBuilder<AppUser?>(
+                                              future: _userService.getUserProfile(data['userId'] ?? ''),
+                                              builder: (context, userSnapshot) {
+                                                final userName = userSnapshot.data?.displayName ??
+                                                    userSnapshot.data?.email ??
+                                                    data['userId'] ?? 'N/A';
+                                                return Row(
+                                                  children: [
+                                                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Guest: $userName',
+                                                        style: TextStyle(
+                                                          color: Colors.grey.shade600,
+                                                          fontSize: 14,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    _formatBookingDates(data['checkIn'], data['checkOut']),
+                                                    style: TextStyle(
+                                                      color: Colors.grey.shade600,
+                                                      fontSize: 14,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
@@ -2675,6 +3135,84 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           fontSize: 11,
                                           letterSpacing: 0.5,
                                         ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: IconButton(
+                                        icon: Icon(Icons.edit, color: Colors.grey.shade700, size: isMobile ? 18 : 20),
+                                        tooltip: 'Edit Status',
+                                        onPressed: () async {
+                                          if (_currentUser == null) return;
+                                          final newStatus = await showDialog<BookingStatus>(
+                                            context: context,
+                                            builder: (context) {
+                                              BookingStatus? selectedStatus = status;
+                                              return StatefulBuilder(
+                                                builder: (context, setState) => AlertDialog(
+                                                  title: const Text('Change Booking Status'),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: BookingStatus.values.map((s) {
+                                                      return RadioListTile<BookingStatus>(
+                                                        title: Text(s.name.toUpperCase()),
+                                                        value: s,
+                                                        groupValue: selectedStatus,
+                                                        onChanged: (value) {
+                                                          setState(() => selectedStatus = value);
+                                                        },
+                                                      );
+                                                    }).toList(),
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context),
+                                                      child: const Text('Cancel'),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () => Navigator.pop(context, selectedStatus),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: const Color(0xFF5A67D8),
+                                                      ),
+                                                      child: const Text('Update'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                          if (newStatus != null && newStatus != status) {
+                                            try {
+                                              await FirebaseFirestore.instance
+                                                  .collection('bookings')
+                                                  .doc(bookingId)
+                                                  .update({'status': newStatus.name});
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Booking status updated to ${newStatus.name}'),
+                                                    backgroundColor: Colors.green,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Error: ${e.toString()}'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
                                       ),
                                     ),
                                     if (isMobile) const SizedBox(height: 12),
@@ -2818,31 +3356,33 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     );
                                                   },
                                                 );
-                                                try {
-                                                  await _bookingService.rejectBooking(
-                                                    bookingId: bookingId,
-                                                    callerUserId: _currentUser!.id,
-                                                    reason: reason,
-                                                  );
-                if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                                                        content: Text('Booking rejected'),
-                                                        backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                                                        content: Text('Error: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
+                                                if (reason != null) {
+                                                  try {
+                                                    await _bookingService.rejectBooking(
+                                                      bookingId: bookingId,
+                                                      callerUserId: _currentUser!.id,
+                                                      reason: reason.isEmpty ? null : reason,
+                                                    );
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text('Booking rejected'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Error: ${e.toString()}'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                }
+                                              },
                                             ),
                                           ),
                                         ],
@@ -3650,99 +4190,512 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: isMobile ? 48 : 60,
-                                  height: isMobile ? 48 : 60,
-                                  decoration: BoxDecoration(
-                                    gradient: status == BookingStatus.confirmed
-                                        ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
-                                        : status == BookingStatus.rejected
-                                            ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
-                                            : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Icon(
-                                    status == BookingStatus.confirmed
-                                        ? Icons.check_circle
-                                        : status == BookingStatus.rejected
-                                            ? Icons.cancel
-                                            : Icons.pending,
-                                    color: Colors.white,
-                                    size: isMobile ? 22 : 28,
-                                  ),
-                                ),
-                                SizedBox(width: isMobile ? 12 : 20),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                        child: isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      Text(
-                                        booking.roomName,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: isMobile ? 15 : 17,
-                                          color: const Color(0xFF1F2937),
+                                      Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          gradient: status == BookingStatus.confirmed
+                                              ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                              : status == BookingStatus.rejected
+                                                  ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                                  : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                          borderRadius: BorderRadius.circular(14),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
+                                        child: Icon(
+                                          status == BookingStatus.confirmed
+                                              ? Icons.check_circle
+                                              : status == BookingStatus.rejected
+                                                  ? Icons.cancel
+                                                  : Icons.pending,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
                                       ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              'Guest: ${booking.userId}',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: isMobile ? 13 : 14,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              booking.roomName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
+                                                color: Color(0xFF1F2937),
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              '${DateFormat('MMM dd, yyyy').format(booking.checkIn)} (1 day)',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: isMobile ? 13 : 14,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
+                                            const SizedBox(height: 4),
+                                            FutureBuilder<AppUser?>(
+                                              future: _userService.getUserProfile(booking.userId),
+                                              builder: (context, userSnapshot) {
+                                                final userName = userSnapshot.data?.displayName ??
+                                                    userSnapshot.data?.email ??
+                                                    booking.userId;
+                                                return Row(
+                                                  children: [
+                                                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Guest: $userName',
+                                                        style: TextStyle(
+                                                          color: Colors.grey.shade600,
+                                                          fontSize: 13,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                      const SizedBox(height: 4),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          _formatBookingDates(booking.checkIn, booking.checkOut),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 13,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.people, size: 14, color: Colors.grey.shade500),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${booking.guests} guest${booking.guests == 1 ? '' : 's'}',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.attach_money, size: 14, color: Colors.grey.shade500),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '₱${booking.total.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade900,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: status == BookingStatus.confirmed
+                                              ? const Color(0xFF38B2AC).withOpacity(0.1)
+                                              : status == BookingStatus.rejected
+                                                  ? const Color(0xFFF56565).withOpacity(0.1)
+                                                  : const Color(0xFFED8936).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          status.name.toUpperCase(),
+                                          style: TextStyle(
+                                            color: status == BookingStatus.confirmed
+                                                ? const Color(0xFF38B2AC)
+                                                : status == BookingStatus.rejected
+                                                    ? const Color(0xFFF56565)
+                                                    : const Color(0xFFED8936),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
                                       Row(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.people, size: 14, color: Colors.grey.shade500),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '${booking.guests} guest${booking.guests == 1 ? '' : 's'}',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: isMobile ? 13 : 14,
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.grey.shade300),
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(Icons.edit, color: Colors.grey.shade700, size: 18),
+                                              tooltip: 'Edit Status',
+                                              onPressed: () async {
+                                                if (_currentUser == null) return;
+                                                final newStatus = await showDialog<BookingStatus>(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    BookingStatus? selectedStatus = status;
+                                                    return StatefulBuilder(
+                                                      builder: (context, setState) => AlertDialog(
+                                                        title: const Text('Change Booking Status'),
+                                                        content: Column(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: BookingStatus.values.map((s) {
+                                                            return RadioListTile<BookingStatus>(
+                                                              title: Text(s.name.toUpperCase()),
+                                                              value: s,
+                                                              groupValue: selectedStatus,
+                                                              onChanged: (value) {
+                                                                setState(() => selectedStatus = value);
+                                                              },
+                                                            );
+                                                          }).toList(),
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('Cancel'),
+                                                          ),
+                                                          ElevatedButton(
+                                                            onPressed: () => Navigator.pop(context, selectedStatus),
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor: const Color(0xFF5A67D8),
+                                                            ),
+                                                            child: const Text('Update'),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                                if (newStatus != null && newStatus != status) {
+                                                  try {
+                                                    await FirebaseFirestore.instance
+                                                        .collection('cottage_bookings')
+                                                        .doc(booking.id)
+                                                        .update({'status': newStatus.name});
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Cottage booking status updated to ${newStatus.name}'),
+                                                          backgroundColor: Colors.green,
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Error: ${e.toString()}'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                }
+                                              },
                                             ),
                                           ),
                                         ],
                                       ),
                                     ],
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
+                                  if (isPending) ...[
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFF48BB78), Color(0xFF38A169)],
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFF48BB78).withOpacity(0.3),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(Icons.check, color: Colors.white, size: 18),
+                                            tooltip: 'Accept',
+                                            onPressed: () async {
+                                              if (_currentUser == null) return;
+                                              try {
+                                                await _cottageBookingService.acceptCottageBooking(
+                                                  bookingId: booking.id,
+                                                  callerUserId: _currentUser!.id,
+                                                  checkConflicts: true,
+                                                );
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: const Text('Cottage booking accepted'),
+                                                      backgroundColor: Colors.green,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                if (mounted) {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) => AlertDialog(
+                                                      title: const Text('Error'),
+                                                      content: Text(e.toString()),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () => Navigator.pop(context),
+                                                          child: const Text('OK'),
+                                                        ),
+                                                        if (e.toString().contains('Conflict'))
+                                                          TextButton(
+                                                            onPressed: () async {
+                                                              Navigator.pop(context);
+                                                              try {
+                                                                await _cottageBookingService.acceptCottageBooking(
+                                                                  bookingId: booking.id,
+                                                                  callerUserId: _currentUser!.id,
+                                                                  checkConflicts: false,
+                                                                );
+                                                                if (mounted) {
+                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text('Cottage booking accepted (conflicts ignored)'),
+                                                                      backgroundColor: Colors.orange,
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              } catch (e2) {
+                                                                if (mounted) {
+                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Text('Error: ${e2.toString()}'),
+                                                                      backgroundColor: Colors.red,
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              }
+                                                            },
+                                                            child: const Text('Accept Anyway'),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFFF56565).withOpacity(0.3),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                                            tooltip: 'Reject',
+                                            onPressed: () async {
+                                              if (_currentUser == null) return;
+                                              final reason = await showDialog<String>(
+                                                context: context,
+                                                builder: (context) {
+                                                  final controller = TextEditingController();
+                                                  return AlertDialog(
+                                                    title: const Text('Reject Cottage Booking'),
+                                                    content: TextField(
+                                                      controller: controller,
+                                                      decoration: const InputDecoration(
+                                                        labelText: 'Reason (optional)',
+                                                        hintText: 'Enter rejection reason...',
+                                                      ),
+                                                      maxLines: 3,
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('Cancel'),
+                                                      ),
+                                                      ElevatedButton(
+                                                        onPressed: () => Navigator.pop(context, controller.text),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: const Color(0xFFF56565),
+                                                        ),
+                                                        child: const Text('Reject'),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                              if (reason != null) {
+                                                try {
+                                                  await _cottageBookingService.rejectCottageBooking(
+                                                    bookingId: booking.id,
+                                                    callerUserId: _currentUser!.id,
+                                                    reason: reason.isEmpty ? null : reason,
+                                                  );
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Cottage booking rejected'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text('Error: ${e.toString()}'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                }
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          gradient: status == BookingStatus.confirmed
+                                              ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                              : status == BookingStatus.rejected
+                                                  ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                                  : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: Icon(
+                                          status == BookingStatus.confirmed
+                                              ? Icons.check_circle
+                                              : status == BookingStatus.rejected
+                                                  ? Icons.cancel
+                                                  : Icons.pending,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              booking.roomName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 17,
+                                                color: Color(0xFF1F2937),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            FutureBuilder<AppUser?>(
+                                              future: _userService.getUserProfile(booking.userId),
+                                              builder: (context, userSnapshot) {
+                                                final userName = userSnapshot.data?.displayName ??
+                                                    userSnapshot.data?.email ??
+                                                    booking.userId;
+                                                return Row(
+                                                  children: [
+                                                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Guest: $userName',
+                                                        style: TextStyle(
+                                                          color: Colors.grey.shade600,
+                                                          fontSize: 14,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    _formatBookingDates(booking.checkIn, booking.checkOut),
+                                                    style: TextStyle(
+                                                      color: Colors.grey.shade600,
+                                                      fontSize: 14,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.people, size: 14, color: Colors.grey.shade500),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '${booking.guests} guest${booking.guests == 1 ? '' : 's'}',
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
@@ -3765,6 +4718,84 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                           fontSize: 11,
                                           letterSpacing: 0.5,
                                         ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: IconButton(
+                                        icon: Icon(Icons.edit, color: Colors.grey.shade700, size: isMobile ? 18 : 20),
+                                        tooltip: 'Edit Status',
+                                        onPressed: () async {
+                                          if (_currentUser == null) return;
+                                          final newStatus = await showDialog<BookingStatus>(
+                                            context: context,
+                                            builder: (context) {
+                                              BookingStatus? selectedStatus = status;
+                                              return StatefulBuilder(
+                                                builder: (context, setState) => AlertDialog(
+                                                  title: const Text('Change Booking Status'),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: BookingStatus.values.map((s) {
+                                                      return RadioListTile<BookingStatus>(
+                                                        title: Text(s.name.toUpperCase()),
+                                                        value: s,
+                                                        groupValue: selectedStatus,
+                                                        onChanged: (value) {
+                                                          setState(() => selectedStatus = value);
+                                                        },
+                                                      );
+                                                    }).toList(),
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context),
+                                                      child: const Text('Cancel'),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () => Navigator.pop(context, selectedStatus),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: const Color(0xFF5A67D8),
+                                                      ),
+                                                      child: const Text('Update'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                          if (newStatus != null && newStatus != status) {
+                                            try {
+                                              await FirebaseFirestore.instance
+                                                  .collection('cottage_bookings')
+                                                  .doc(booking.id)
+                                                  .update({'status': newStatus.name});
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Cottage booking status updated to ${newStatus.name}'),
+                                                    backgroundColor: Colors.green,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Error: ${e.toString()}'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -3917,28 +4948,30 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     );
                                                   },
                                                 );
-                                                try {
-                                                  await _cottageBookingService.rejectCottageBooking(
-                                                    bookingId: booking.id,
-                                                    callerUserId: _currentUser!.id,
-                                                    reason: reason,
-                                                  );
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text('Cottage booking rejected'),
-                                                        backgroundColor: Colors.red,
-                                                      ),
+                                                if (reason != null) {
+                                                  try {
+                                                    await _cottageBookingService.rejectCottageBooking(
+                                                      bookingId: booking.id,
+                                                      callerUserId: _currentUser!.id,
+                                                      reason: reason.isEmpty ? null : reason,
                                                     );
-                                                  }
-                                                } catch (e) {
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text('Error: ${e.toString()}'),
-                                                        backgroundColor: Colors.red,
-                                                      ),
-                                                    );
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text('Cottage booking rejected'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Error: ${e.toString()}'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
                                                   }
                                                 }
                                               },
@@ -4151,7 +5184,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
                                                   const SizedBox(width: 6),
                                                   Text(
-                                                    eventDate.toLocal().toString().substring(0, 10),
+                                                    _formatBookingDates(eventDate, eventDate, isEvent: true),
                                                     style: TextStyle(
                                                       color: Colors.grey.shade600,
                                                       fontSize: isMobile ? 13 : 14,
@@ -4207,6 +5240,84 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   ),
                           ),
                         ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: IconButton(
+                                        icon: Icon(Icons.edit, color: Colors.grey.shade700, size: isMobile ? 18 : 20),
+                                        tooltip: 'Edit Status',
+                                        onPressed: () async {
+                                          if (_currentUser == null) return;
+                                          final newStatus = await showDialog<EventBookingStatus>(
+                                            context: context,
+                                            builder: (context) {
+                                              EventBookingStatus? selectedStatus = status;
+                                              return StatefulBuilder(
+                                                builder: (context, setState) => AlertDialog(
+                                                  title: const Text('Change Booking Status'),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: EventBookingStatus.values.map((s) {
+                                                      return RadioListTile<EventBookingStatus>(
+                                                        title: Text(s.name.toUpperCase()),
+                                                        value: s,
+                                                        groupValue: selectedStatus,
+                                                        onChanged: (value) {
+                                                          setState(() => selectedStatus = value);
+                                                        },
+                                                      );
+                                                    }).toList(),
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context),
+                                                      child: const Text('Cancel'),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () => Navigator.pop(context, selectedStatus),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: const Color(0xFF5A67D8),
+                                                      ),
+                                                      child: const Text('Update'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                          if (newStatus != null && newStatus != status) {
+                                            try {
+                                              await FirebaseFirestore.instance
+                                                  .collection('event_bookings')
+                                                  .doc(booking.id)
+                                                  .update({'status': newStatus.name});
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Event booking status updated to ${newStatus.name}'),
+                                                    backgroundColor: Colors.green,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Error: ${e.toString()}'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
+                                      ),
+                                    ),
                                     if (isMobile) const SizedBox(height: 12),
                                     if (isPending)
                       Row(
@@ -4347,31 +5458,33 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     );
                                                   },
                                                 );
-                                                try {
-                                                  await _eventBookingService.rejectEventBooking(
-                                                    bookingId: booking.id,
-                                                    callerUserId: _currentUser!.id,
-                                                    reason: reason,
-                                                  );
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text('Event booking rejected'),
-                                                        backgroundColor: Colors.red,
-                                                      ),
+                                                if (reason != null) {
+                                                  try {
+                                                    await _eventBookingService.rejectEventBooking(
+                                                      bookingId: booking.id,
+                                                      callerUserId: _currentUser!.id,
+                                                      reason: reason.isEmpty ? null : reason,
                                                     );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                                        content: Text('Error: ${e.toString()}'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text('Event booking rejected'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Error: ${e.toString()}'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                }
+                                              },
                             ),
                           ),
                         ],
