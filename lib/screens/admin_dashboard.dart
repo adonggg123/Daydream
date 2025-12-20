@@ -2620,37 +2620,37 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         child: isMobile
                             ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
+        children: [
+                            Row(
+                              children: [
+                                Container(
                                         width: 48,
                                         height: 48,
-                                        decoration: BoxDecoration(
-                                          gradient: status == BookingStatus.confirmed
-                                              ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
-                                              : status == BookingStatus.rejected
-                                                  ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
-                                                  : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: Icon(
-                                          status == BookingStatus.confirmed
-                                              ? Icons.check_circle
-                                              : status == BookingStatus.rejected
-                                                  ? Icons.cancel
-                                                  : Icons.pending,
-                                          color: Colors.white,
+                                  decoration: BoxDecoration(
+                                    gradient: status == BookingStatus.confirmed
+                                        ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                        : status == BookingStatus.rejected
+                                            ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                            : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                    child: Icon(
+                                    status == BookingStatus.confirmed
+                                        ? Icons.check_circle
+                                        : status == BookingStatus.rejected
+                                            ? Icons.cancel
+                                            : Icons.pending,
+                                    color: Colors.white,
                                           size: 22,
-                                        ),
-                                      ),
+                                  ),
+                                ),
                                       const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              data['roomName'] ?? 'Unknown',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                                      Text(
+                                        data['roomName'] ?? 'Unknown',
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 15,
@@ -2672,7 +2672,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     Expanded(
                                                       child: Text(
                                                         'Guest: $userName',
-                                                        style: TextStyle(
+                                        style: TextStyle(
                                                           color: Colors.grey.shade600,
                                                           fontSize: 13,
                                                         ),
@@ -2761,7 +2761,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 : status == BookingStatus.rejected
                                                     ? const Color(0xFFF56565)
                                                     : const Color(0xFFED8936),
-                                            fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w700,
                                             fontSize: 11,
                                             letterSpacing: 0.5,
                                           ),
@@ -3061,10 +3061,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 17,
                                                 color: Color(0xFF1F2937),
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 6),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 6),
                                             FutureBuilder<AppUser?>(
                                               future: _userService.getUserProfile(data['userId'] ?? ''),
                                               builder: (context, userSnapshot) {
@@ -3072,47 +3072,47 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     userSnapshot.data?.email ??
                                                     data['userId'] ?? 'N/A';
                                                 return Row(
-                                                  children: [
-                                                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
-                                                    const SizedBox(width: 6),
-                                                    Expanded(
-                                                      child: Text(
+                  children: [
+                                          Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
                                                         'Guest: $userName',
-                                                        style: TextStyle(
-                                                          color: Colors.grey.shade600,
+                        style: TextStyle(
+                                                color: Colors.grey.shade600,
                                                           fontSize: 14,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                                         maxLines: 1,
-                                                      ),
-                                                    ),
-                                                  ],
+                                            ),
+                                          ),
+                                        ],
                                                 );
                                               },
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  child: Text(
-                                                    _formatBookingDates(data['checkIn'], data['checkOut']),
-                                                    style: TextStyle(
-                                                      color: Colors.grey.shade600,
-                                                      fontSize: 14,
-                                                    ),
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
                                       ),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                      const SizedBox(height: 4),
+                                      Row(
                                         children: [
+                                          Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                      child: Text(
+                                                    _formatBookingDates(data['checkIn'], data['checkOut']),
+                        style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                      fontSize: 14,
+                        ),
+                                              overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
@@ -3357,32 +3357,32 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   },
                                                 );
                                                 if (reason != null) {
-                                                  try {
-                                                    await _bookingService.rejectBooking(
-                                                      bookingId: bookingId,
-                                                      callerUserId: _currentUser!.id,
+                                                try {
+                                                  await _bookingService.rejectBooking(
+                                                    bookingId: bookingId,
+                                                    callerUserId: _currentUser!.id,
                                                       reason: reason.isEmpty ? null : reason,
-                                                    );
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text('Booking rejected'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
+                                                  );
+                if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                                                        content: Text('Booking rejected'),
+                                                        backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                                                        content: Text('Error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                                                     }
-                                                  } catch (e) {
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text('Error: ${e.toString()}'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                }
-                                              },
+                }
+              }
+            },
                                             ),
                                           ),
                                         ],
@@ -4193,37 +4193,37 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         child: isMobile
                             ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
+                          children: [
+                            Row(
+                              children: [
+                                Container(
                                         width: 48,
                                         height: 48,
-                                        decoration: BoxDecoration(
-                                          gradient: status == BookingStatus.confirmed
-                                              ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
-                                              : status == BookingStatus.rejected
-                                                  ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
-                                                  : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: Icon(
-                                          status == BookingStatus.confirmed
-                                              ? Icons.check_circle
-                                              : status == BookingStatus.rejected
-                                                  ? Icons.cancel
-                                                  : Icons.pending,
-                                          color: Colors.white,
+                                  decoration: BoxDecoration(
+                                    gradient: status == BookingStatus.confirmed
+                                        ? const LinearGradient(colors: [Color(0xFF38B2AC), Color(0xFF319795)])
+                                        : status == BookingStatus.rejected
+                                            ? const LinearGradient(colors: [Color(0xFFF56565), Color(0xFFE53E3E)])
+                                            : const LinearGradient(colors: [Color(0xFFED8936), Color(0xFFDD6B20)]),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    status == BookingStatus.confirmed
+                                        ? Icons.check_circle
+                                        : status == BookingStatus.rejected
+                                            ? Icons.cancel
+                                            : Icons.pending,
+                                    color: Colors.white,
                                           size: 22,
-                                        ),
-                                      ),
+                                  ),
+                                ),
                                       const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              booking.roomName,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        booking.roomName,
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 15,
@@ -4245,7 +4245,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     Expanded(
                                                       child: Text(
                                                         'Guest: $userName',
-                                                        style: TextStyle(
+                                        style: TextStyle(
                                                           color: Colors.grey.shade600,
                                                           fontSize: 13,
                                                         ),
@@ -4330,7 +4330,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 : status == BookingStatus.rejected
                                                     ? const Color(0xFFF56565)
                                                     : const Color(0xFFED8936),
-                                            fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w700,
                                             fontSize: 11,
                                             letterSpacing: 0.5,
                                           ),
@@ -4630,10 +4630,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 17,
                                                 color: Color(0xFF1F2937),
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 6),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 6),
                                             FutureBuilder<AppUser?>(
                                               future: _userService.getUserProfile(booking.userId),
                                               builder: (context, userSnapshot) {
@@ -4641,61 +4641,61 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                     userSnapshot.data?.email ??
                                                     booking.userId;
                                                 return Row(
-                                                  children: [
-                                                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
-                                                    const SizedBox(width: 6),
-                                                    Expanded(
-                                                      child: Text(
+                                        children: [
+                                          Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
                                                         'Guest: $userName',
-                                                        style: TextStyle(
-                                                          color: Colors.grey.shade600,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
                                                           fontSize: 14,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                                         maxLines: 1,
-                                                      ),
-                                                    ),
-                                                  ],
+                                            ),
+                                          ),
+                                        ],
                                                 );
                                               },
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  child: Text(
-                                                    _formatBookingDates(booking.checkIn, booking.checkOut),
-                                                    style: TextStyle(
-                                                      color: Colors.grey.shade600,
-                                                      fontSize: 14,
-                                                    ),
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.people, size: 14, color: Colors.grey.shade500),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  '${booking.guests} guest${booking.guests == 1 ? '' : 's'}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade600,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
                                       ),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                      const SizedBox(height: 4),
+                                      Row(
                                         children: [
+                                          Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                                    _formatBookingDates(booking.checkIn, booking.checkOut),
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                      fontSize: 14,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.people, size: 14, color: Colors.grey.shade500),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '${booking.guests} guest${booking.guests == 1 ? '' : 's'}',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                                    fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
@@ -4949,28 +4949,28 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   },
                                                 );
                                                 if (reason != null) {
-                                                  try {
-                                                    await _cottageBookingService.rejectCottageBooking(
-                                                      bookingId: booking.id,
-                                                      callerUserId: _currentUser!.id,
+                                                try {
+                                                  await _cottageBookingService.rejectCottageBooking(
+                                                    bookingId: booking.id,
+                                                    callerUserId: _currentUser!.id,
                                                       reason: reason.isEmpty ? null : reason,
+                                                  );
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Cottage booking rejected'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
                                                     );
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text('Cottage booking rejected'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  } catch (e) {
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text('Error: ${e.toString()}'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
+                                                  }
+                                                } catch (e) {
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text('Error: ${e.toString()}'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
                                                     }
                                                   }
                                                 }
@@ -5316,8 +5316,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                             }
                                           }
                                         },
-                                      ),
-                                    ),
+                          ),
+                        ),
                                     if (isMobile) const SizedBox(height: 12),
                                     if (isPending)
                       Row(
@@ -5459,32 +5459,32 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                                   },
                                                 );
                                                 if (reason != null) {
-                                                  try {
-                                                    await _eventBookingService.rejectEventBooking(
-                                                      bookingId: booking.id,
-                                                      callerUserId: _currentUser!.id,
+                                                try {
+                                                  await _eventBookingService.rejectEventBooking(
+                                                    bookingId: booking.id,
+                                                    callerUserId: _currentUser!.id,
                                                       reason: reason.isEmpty ? null : reason,
+                                                  );
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Event booking rejected'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
                                                     );
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text('Event booking rejected'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
                                                     }
-                                                  } catch (e) {
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text('Error: ${e.toString()}'),
-                                                          backgroundColor: Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                }
-                                              },
+                                  }
+                                }
+                              },
                             ),
                           ),
                         ],
