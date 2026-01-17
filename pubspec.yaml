@@ -32,9 +32,11 @@ dev_dependencies:
 
 flutter_icons:
   android: "launcher_icon"
-  web: "launcher_icon"
   ios: true
   image_path: "assets/icons/daydream.png"
+  web: 
+     generate: true
+     image_path: "assets/icons/daydream.png"
 
 flutter:
   uses-material-design: true
